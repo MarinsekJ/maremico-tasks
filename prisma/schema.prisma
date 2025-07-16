@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  surname   String
+  username  String   @unique
+  email     String   @unique
+  password  String
+  isActive  Boolean  @default(true)
+  userType  UserType @default(REGULAR_USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  groups        UserGroup[]
+  createdTasks  Task[]       @relation("TaskCreator")
+  assignedTasks Task[]       @relation("TaskAssignee")
+  taskLogs      TaskLog[]
+  groupTaskTime GroupTaskTime[]
+
+  @@map("users")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String   @default("#3B82F6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       UserGroup[]
+  groupTasks  GroupTask[]
+
+  @@map("groups")
+}
+
+model UserGroup {
+  id      String @id @default(cuid())
+  userId  String
+  groupId String
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("user_groups")
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  title         String
+  description   String?
+  deadline      DateTime?
+  status        TaskStatus @default(WAITING)
+  type          TaskType
+  timeSum       Int        @default(0) // in seconds
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  assignedUserId String?
+  creatorId      String
+  assignedUser   User?  @relation("TaskAssignee", fields: [assignedUserId], references: [id])
+  creator        User   @relation("TaskCreator", fields: [creatorId], references: [id])
+  taskLogs       TaskLog[]
+
+  @@map("tasks")
+}
+
+model GroupTask {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  deadline    DateTime?
+  status      TaskStatus @default(WAITING)
+  timeSum     Int        @default(0) // in seconds
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  groupId     String
+  group       Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  timePerUser GroupTaskTime[]
+
+  @@map("group_tasks")
+}
+
+model GroupTaskTime {
+  id          String @id @default(cuid())
+  userId      String
+  groupTaskId String
+  timeSpent   Int    @default(0) // in seconds
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupTask GroupTask @relation(fields: [groupTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupTaskId])
+  @@map("group_task_time")
+}
+
+model TaskLog {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String?  // For regular tasks
+  groupTaskId String? // For group tasks
+  taskType  String?
+  logType   String
+  details   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([groupTaskId])
+  @@map("TaskLog")
+}
+
+enum UserType {
+  ADMIN
+  REGULAR_USER
+}
+
+enum TaskStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  PAUSED
+}
+
+enum TaskType {
+  ADMIN_TASK
+  REGULAR_TASK
+  GROUP_TASK
+}
+
+enum LogType {
+  CHANGED_STATUS
+  STARTED_TIMER
+  PAUSED_TIMER
+  COMPLETED_TASK
+  UNCOMPLETED_TASK
+}
