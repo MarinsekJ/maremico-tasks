@@ -126,60 +126,70 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
             key={task.id}
             className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
           >
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-start gap-2 mb-2">
-                  <h3 className="text-lg font-medium text-gray-900 flex-1 min-w-0 break-words line-clamp-2">
-                    {task.title}
-                  </h3>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                      {getStatusIcon(task.status)}
-                      <span className="ml-1 capitalize">{task.status.toLowerCase().replace('_', ' ')}</span>
-                    </span>
-                    <span 
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
-                      style={{ backgroundColor: task.group.color }}
-                    >
-                      {task.group.name}
-                    </span>
+                <div className="mb-3">
+                  <div className="mb-2">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {task.title}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                        {getStatusIcon(task.status)}
+                        <span className="ml-1 capitalize">{task.status.toLowerCase().replace('_', ' ')}</span>
+                      </span>
+                      <span 
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: task.group.color }}
+                      >
+                        {task.group.name}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                {task.description && (
-                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                    {task.description}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-                                  {task.deadline && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>Due: {formatDate(task.deadline)}</span>
-                  </div>
-                )}
                   
-                  <div className="flex items-center gap-1">
+                  {task.description && (
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 mb-3">
+                  {task.deadline && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>Due: {formatDate(task.deadline)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Total Time */}
+                <div className="mb-3">
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span>Total Time: {formatTime(task.timeSum)}</span>
+                    <span className="font-medium">Total Time: {formatTime(task.timeSum)}</span>
                   </div>
                 </div>
 
                 {/* Time per user */}
                 {task.timePerUser.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Time per user:</h4>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      Time per User
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {task.timePerUser.map((timeEntry, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded"
+                          className="flex items-center justify-between bg-white px-3 py-2 rounded-md border border-blue-100"
                         >
-                          <span className="font-medium">
-                            {timeEntry.user.name} {timeEntry.user.surname}:
+                          <span className="font-medium text-sm text-gray-700">
+                            {timeEntry.user.name} {timeEntry.user.surname}
                           </span>
-                          <span>{formatTime(timeEntry.timeSpent)}</span>
+                          <span className="text-sm font-semibold text-blue-600">
+                            {formatTime(timeEntry.timeSpent)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -187,7 +197,7 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
                 )}
               </div>
 
-              <div className="ml-4 flex-shrink-0">
+              <div className="flex-shrink-0">
                 <GroupTaskTimer
                   taskId={task.id}
                   status={task.status}

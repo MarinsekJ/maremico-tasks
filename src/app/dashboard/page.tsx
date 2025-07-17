@@ -108,33 +108,33 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Welcome back, {user.name}!
             </h1>
             <p className="text-gray-600 mt-1">
               Here's what's on your plate today
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p className="text-sm text-gray-500">
               {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Today's Tasks & Undated Tasks */}
           <div className="lg:col-span-2 space-y-6">
             {/* Overdue Tasks */}
             {getOverdueTasks().length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border-2 border-red-300 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-red-700">
+              <div className="bg-white rounded-xl shadow-sm border-2 border-red-300 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold text-red-700">
                     Overdue Tasks
                   </h2>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-sm text-red-600 font-medium">
                       Past Deadline
                     </p>
@@ -150,12 +150,12 @@ export default function DashboardPage() {
             )}
 
             {/* Today's Tasks */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Today's Tasks
                 </h2>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-sm text-gray-500">
                     {format(new Date(), 'EEEE')}
                   </p>
@@ -173,12 +173,12 @@ export default function DashboardPage() {
             </div>
 
             {/* Tasks with No Deadline */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Tasks with No Deadline
                 </h2>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-sm text-gray-500">
                     No deadline set
                   </p>
@@ -194,8 +194,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Calendar */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
               Weekly Calendar
             </h2>
             <Calendar 
@@ -207,11 +207,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Group Tasks */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl text-gray-700 shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
             Group Tasks
           </h2>
-          <GroupTaskList 
+          <GroupTaskList
             tasks={groupTasks} 
             loading={loadingTasks}
             onTaskUpdate={fetchGroupTasks}

@@ -29,7 +29,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     await logout()
-    router.push('/login')
+    // Force navigation on mobile
+    router.push('/login?t=' + Date.now())
   }
 
   const navigation = [
@@ -237,7 +238,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main className="py-8 px-4 sm:px-6 lg:px-8">
+        <main className="py-4 sm:py-8 px-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>

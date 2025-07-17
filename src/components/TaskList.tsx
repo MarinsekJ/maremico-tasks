@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, Play, Pause, CheckCircle, AlertCircle } from 'lucide-react'
 import TaskTimer from './TaskTimer'
-import { formatDate, isTaskOverdue } from '@/lib/utils'
+import { formatDate, isTaskOverdue, forceMobileNavigation } from '@/lib/utils'
 
 interface Task {
   id: string
@@ -73,7 +73,9 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
   }
 
   const handleTaskClick = (taskId: string) => {
-    router.push(`/tasks/${taskId}`)
+    // Force navigation on mobile
+    const url = forceMobileNavigation(`/tasks/${taskId}`)
+    router.push(url)
   }
 
   if (loading) {
@@ -114,11 +116,11 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
             }`}
             onClick={() => handleTaskClick(task.id)}
           >
-            <div className="flex items-start justify-between min-h-[120px]">
-              <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className={`text-lg font-medium truncate ${
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="mb-3">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h3 className={`text-lg font-medium ${
                       overdue ? 'text-red-700' : 'text-gray-900'
                     }`}>
                       {task.title}
@@ -140,13 +142,13 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
                   </div>
                   
                   {task.description && (
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                       {task.description}
                     </p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
                   {task.deadline && (
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
@@ -162,18 +164,18 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
                   </div>
 
                   {task.assignedUser && (
-                    <span>
+                    <span className="truncate">
                       Assigned to: {task.assignedUser.name} {task.assignedUser.surname}
                     </span>
                   )}
 
-                  <span>
+                  <span className="truncate">
                     Created by: {task.creator.name} {task.creator.surname}
                   </span>
                 </div>
               </div>
 
-              <div className="ml-4 flex-shrink-0">
+              <div className="flex-shrink-0">
                 <div onClick={(e) => e.stopPropagation()}>
                   <TaskTimer
                     taskId={task.id}
@@ -191,7 +193,6 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
                     assignedUserId={task.assignedUser?.id}
                     currentUserId={currentUserId}
                   />
-
                 </div>
               </div>
             </div>

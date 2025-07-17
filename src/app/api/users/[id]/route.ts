@@ -38,7 +38,13 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    // Transform the groups data to match frontend expectations
+    const transformedUser = {
+      ...user,
+      groups: user.groups.map(ug => ug.group)
+    }
+
+    return NextResponse.json(transformedUser)
   } catch (error) {
     console.error('Error fetching user:', error)
     return NextResponse.json(
@@ -176,7 +182,13 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json(updatedUser)
+    // Transform the groups data to match frontend expectations
+    const transformedUser = {
+      ...updatedUser,
+      groups: updatedUser!.groups.map(ug => ug.group)
+    }
+
+    return NextResponse.json(transformedUser)
   } catch (error) {
     console.error('Error updating user:', error)
     return NextResponse.json(

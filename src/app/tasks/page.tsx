@@ -347,27 +347,25 @@ export default function TasksPage() {
               className={`bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer ${
                 overdue ? 'border-2 border-red-500' : ''
               }`}
-              onClick={() => router.push(`/tasks/${task.id}`)}
+              onClick={() => router.push(`/tasks/${task.id}?t=${Date.now()}`)}
             >
               <div className="p-6">
                 <div className="mb-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className={`text-lg font-semibold flex-1 min-w-0 break-words line-clamp-2 ${
-                      overdue ? 'text-red-600' : 'text-gray-900'
-                    }`}>{task.title}</h3>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {overdue && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                          OVERDUE
-                        </span>
-                      )}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(task.type)}`}>
-                        {task.type === 'ADMIN_TASK' ? 'Admin Created' : 'Regular Task'}
+                  <h3 className={`text-lg font-semibold mb-3 break-words ${
+                    overdue ? 'text-red-600' : 'text-gray-900'
+                  }`}>{task.title}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {overdue && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                        OVERDUE
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}>
-                        {task.status.replace('_', ' ')}
-                      </span>
-                    </div>
+                    )}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(task.type)}`}>
+                      {task.type === 'ADMIN_TASK' ? 'Admin Created' : 'Regular Task'}
+                    </span>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}>
+                      {task.status.replace('_', ' ')}
+                    </span>
                   </div>
                 </div>
 
@@ -398,7 +396,7 @@ export default function TasksPage() {
                   <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    router.push(`/tasks/${task.id}`)
+                    router.push(`/tasks/${task.id}?t=${Date.now()}`)
                   }}
                   className="text-blue-600 underline hover:text-blue-800 transition-colors text-sm align-left">
                   View Details

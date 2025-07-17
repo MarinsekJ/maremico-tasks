@@ -322,7 +322,7 @@ export default function GroupTasksPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredGroupTasks.map((task) => {
             const overdue = isTaskOverdue(task.deadline)
-            const totalTimeSpent = task.timePerUser.reduce((sum, time) => sum + time.timeSpent, 0)
+            const totalTimeSpent = task.timePerUser.reduce((sum: number, time: { timeSpent: number }) => sum + time.timeSpent, 0)
             return (
             <div 
               key={task.id} 

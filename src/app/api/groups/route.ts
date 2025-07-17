@@ -14,23 +14,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only admins can view all groups
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const groups = await prisma.group.findMany({
-      include: {
-        users: {
-          include: {
-            user: true
+    let groups;
+    
+    if (decoded.userType === 'ADMIN') {
+      // Admins can view all groups
+      groups = await prisma.group.findMany({
+        include: {
+          users: {
+            include: {
+              user: true
+            }
           }
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+      })
+    } else {
+      // Regular users can only view groups they're members of
+      groups = await prisma.group.findMany({
+        where: {
+          users: {
+            some: {
+              userId: decoded.id
+            }
+          }
+        },
+        include: {
+          users: {
+            include: {
+              user: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+    }
 
     return NextResponse.json(groups)
   } catch (error) {

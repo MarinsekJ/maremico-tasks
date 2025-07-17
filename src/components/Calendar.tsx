@@ -44,7 +44,9 @@ export default function Calendar({ selectedDate, onDateSelect, tasks }: Calendar
   }
 
   const handleViewTask = (taskId: string) => {
-    router.push(`/tasks/${taskId}`)
+    // Force navigation on mobile by adding timestamp
+    const url = `/tasks/${taskId}?t=${Date.now()}`
+    router.push(url)
   }
 
   return (

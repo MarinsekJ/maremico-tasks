@@ -11,9 +11,19 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/dashboard')
+        // Force navigation on mobile
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+          window.location.href = '/dashboard'
+        } else {
+          router.push('/dashboard')
+        }
       } else {
-        router.push('/login')
+        // Force navigation on mobile
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+          window.location.href = '/login'
+        } else {
+          router.push('/login')
+        }
       }
     }
   }, [user, loading, router])

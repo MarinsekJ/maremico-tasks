@@ -35,7 +35,7 @@ export default function EditUserPage() {
   const { user: currentUser, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
-  const userId = params.id as string
+  const userId = params?.id as string
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -77,9 +77,7 @@ export default function EditUserPage() {
       }
       
       fetchUserData()
-      if (isAdmin) {
-        fetchGroups()
-      }
+      fetchGroups()
     }
   }, [isAuthenticated, authLoading, currentUser, router, userId, isAdmin, isOwnProfile])
 
@@ -266,40 +264,33 @@ export default function EditUserPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {/* Back Button */}
+        <div>
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            {isOwnProfile ? 'Back to Profile' : 'Back to Users'}
+          </button>
+        </div>
+
         {/* Header */}
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              {isOwnProfile ? 'Back to Profile' : 'Back to Users'}
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {isOwnProfile 
-                  ? (isEditing ? 'Edit Profile' : 'My Profile') 
-                  : (isEditing ? 'Edit User' : 'User Details')
-                }
-              </h1>
-              <p className="text-gray-600 mt-1">
-                {isEditing 
-                  ? (isOwnProfile ? 'Update your profile information' : 'Update user information')
-                  : (isOwnProfile ? 'View your profile information' : 'View user information')
-                }
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isOwnProfile 
+                ? (isEditing ? 'Edit Profile' : 'My Profile') 
+                : (isEditing ? `Edit User ${formData.name}` : `Details of ${formData.name}`)
+              }
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {isEditing 
+                ? (isOwnProfile ? 'Update your profile information' : 'Update user information')
+                : (isOwnProfile ? 'View your profile information' : 'View user information')
+              }
+            </p>
           </div>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <User className="h-5 w-5" />
-              {isOwnProfile ? 'Edit Profile' : 'Edit User'}
-            </button>
-          )}
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
@@ -502,31 +493,47 @@ export default function EditUserPage() {
                 </div>
               )}
 
-              {/* Groups - Admin Only */}
-              {isAdmin && (
+              {/* Groups Management - Admin Only and Only During Editing */}
+              {isAdmin && isEditing && (
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Groups</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Manage Groups</h3>
                   <div className="space-y-3">
-                    {groups.map((group) => (
-                      <label key={group.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.groupIds.includes(group.id)}
-                          onChange={() => handleGroupToggle(group.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <div className="ml-3 flex items-center">
-                          <div
-                            className="w-3 h-3 rounded-full mr-2"
-                            style={{ backgroundColor: group.color }}
-                          ></div>
-                          <span className="text-sm text-gray-700">{group.name}</span>
-                          {group.description && (
-                            <span className="text-sm text-gray-500 ml-2">({group.description})</span>
+                    {groups.map((group) => {
+                      const isCurrentMember = formData.groupIds.includes(group.id)
+                      return (
+                        <label key={group.id} className={`flex items-center p-2 rounded-lg border ${
+                          isCurrentMember ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={isCurrentMember}
+                            onChange={() => handleGroupToggle(group.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="ml-3 flex items-center flex-1">
+                            <div
+                              className="w-3 h-3 rounded-full mr-2"
+                              style={{ backgroundColor: group.color }}
+                            ></div>
+                            <span className="text-sm text-gray-700">{group.name}</span>
+                            {group.description && (
+                              <span className="text-sm text-gray-500 ml-2">({group.description})</span>
+                            )}
+                          </div>
+                          {isCurrentMember && (
+                            <span className="text-xs text-blue-600 font-medium">Current Member</span>
                           )}
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Check the boxes above to add this user to groups. Uncheck to remove from groups.
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Current groups: {formData.groupIds.length} | Available groups: {groups.length}
+                    </p>
                   </div>
                 </div>
               )}
@@ -626,30 +633,28 @@ export default function EditUserPage() {
                 </div>
               )}
 
-              {/* Groups - Admin Only */}
-              {isAdmin && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Groups</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {userData.groups.length > 0 ? (
-                      userData.groups.map((group) => (
-                        <span
-                          key={group.id}
-                          className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                          style={{ 
-                            backgroundColor: `${group.color}20`,
-                            color: group.color
-                          }}
-                        >
-                          {group.name}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No groups assigned</p>
-                    )}
-                  </div>
+              {/* Groups */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Groups</h3>
+                <div className="flex flex-wrap gap-2">
+                  {userData.groups && userData.groups.length > 0 ? (
+                    userData.groups.map((group) => (
+                      <span
+                        key={group.id}
+                        className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                        style={{ 
+                          backgroundColor: `${group.color}20`,
+                          color: group.color
+                        }}
+                      >
+                        {group.name}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No groups assigned</p>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Account Information */}
               <div>
@@ -668,6 +673,16 @@ export default function EditUserPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="bottom-0 left-0 right-0 border-t border-gray-200 p-4">
+        <button
+          onClick={() => setIsEditing(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <User className="h-5 w-5" />
+          {isOwnProfile ? 'Edit Profile' : 'Edit User'}
+        </button>
       </div>
     </DashboardLayout>
   )

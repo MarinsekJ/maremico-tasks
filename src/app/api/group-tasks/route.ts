@@ -26,8 +26,20 @@ export async function GET(request: NextRequest) {
         select: { groupId: true }
       })
       const groupIds = userGroups.map(ug => ug.groupId)
-      whereClause.groupId = { in: groupIds }
+      
+      if (groupId) {
+        // If a specific group is requested, check if user is a member of that group
+        if (groupIds.includes(groupId)) {
+          whereClause.groupId = groupId
+        } else {
+          return NextResponse.json({ error: 'Access denied to this group' }, { status: 403 })
+        }
+      } else {
+        // Show tasks from all user's groups
+        whereClause.groupId = { in: groupIds }
+      }
     } else if (groupId) {
+      // Admin can access any group
       whereClause.groupId = groupId
     }
 

@@ -51,10 +51,17 @@ export default function ProfilePage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch(`/api/users/${user?.id}`)
+      const response = await fetch('/api/auth/me')
       if (response.ok) {
         const data = await response.json()
-        setUserData(data)
+        // Transform the data to match the expected interface
+        setUserData({
+          ...data,
+          groups: data.groups.map((group: any) => ({
+            id: group.id,
+            group: group
+          }))
+        })
       }
     } catch (error) {
       console.error('Error fetching user data:', error)
@@ -161,16 +168,18 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Edit Profile Button */}
-                <div className="mt-4">
-                  <button
-                    onClick={() => router.push(`/admin/users/${userData.id}`)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit Profile
-                  </button>
-                </div>
+                {/* Edit Profile Button - Admin Only */}
+                {userData.userType === 'ADMIN' && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => router.push(`/admin/users/${userData.id}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Profile
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -33,8 +33,12 @@ export async function GET(request: NextRequest) {
       id: user.id,
       name: user.name,
       surname: user.surname,
+      username: user.username,
       email: user.email,
       userType: user.userType,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       groups: user.groups.map(ug => ug.group)
     })
   } catch (error) {

@@ -31,7 +31,7 @@ interface Group {
   }[]
 }
 
-export default function EditGroupPage({ params }: { params: { id: string } }) {
+export default function EditGroupPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -45,11 +45,20 @@ export default function EditGroupPage({ params }: { params: { id: string } }) {
     userIds: [] as string[]
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [groupId, setGroupId] = useState<string>('')
 
   useEffect(() => {
-    if (!authLoading) {
+    const getParams = async () => {
+      const resolvedParams = await params
+      setGroupId(resolvedParams.id)
+    }
+    getParams()
+  }, [params])
+
+  useEffect(() => {
+    if (!authLoading && groupId) {
       if (!isAuthenticated) {
-        router.push(`/login?redirectTo=${encodeURIComponent(`/admin/groups/${params.id}`)}`)
+        router.push(`/login?redirectTo=${encodeURIComponent(`/admin/groups/${groupId}`)}`)
         return
       }
       
@@ -61,11 +70,11 @@ export default function EditGroupPage({ params }: { params: { id: string } }) {
       fetchGroup()
       fetchUsers()
     }
-  }, [isAuthenticated, authLoading, user, router, params.id])
+  }, [isAuthenticated, authLoading, user, router, groupId])
 
   const fetchGroup = async () => {
     try {
-      const response = await fetch(`/api/groups/${params.id}`)
+      const response = await fetch(`/api/groups/${groupId}`)
       if (response.ok) {
         const data = await response.json()
         console.log('Fetched group data:', data) // Debug log
@@ -121,7 +130,7 @@ export default function EditGroupPage({ params }: { params: { id: string } }) {
     }
 
     try {
-      const response = await fetch(`/api/groups/${params.id}`, {
+      const response = await fetch(`/api/groups/${groupId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -196,7 +205,7 @@ export default function EditGroupPage({ params }: { params: { id: string } }) {
               <ArrowLeft className="h-5 w-5" />
               Back to Groups
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Group</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Edit group {formData.name}</h1>
             <p className="text-gray-600 mt-1">Update group information and members</p>
           </div>
         </div>

@@ -131,39 +131,36 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
   const buttonConfig = getButtonConfig()
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 min-w-[120px]">
       {/* Timer Display */}
       <div className="text-center">
-        <div className="flex items-center gap-1 text-sm text-gray-600">
-          <Clock className="h-4 w-4" />
-          <span>Total: {formatTime(timeSum + elapsedTime)}</span>
-        </div>
         {isRunning && (
-          <div className="text-xs text-blue-600 font-medium">
-            Active: {formatTime(elapsedTime)}
+          <div className="text-xs text-blue-600 font-medium mb-1">
+            <span className="hidden sm:inline">Active: </span>
+            {formatTime(elapsedTime)}
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 w-full">
         {buttonConfig.action && (
           <button
             onClick={() => handleAction(buttonConfig.action!)}
-            className={`flex items-center gap-1 px-3 py-1 text-white text-sm rounded-lg transition-colors ${buttonConfig.className}`}
+            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-white text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
           >
-            <buttonConfig.icon className="h-4 w-4" />
-            {buttonConfig.label}
+            <buttonConfig.icon className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{buttonConfig.label}</span>
           </button>
         )}
 
         {status !== 'COMPLETED' && (
           <button
             onClick={() => handleAction('complete')}
-            className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+            className="flex items-center justify-center gap-1 px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors w-full"
           >
-            <CheckCircle className="h-4 w-4" />
-            Complete
+            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Complete</span>
           </button>
         )}
       </div>

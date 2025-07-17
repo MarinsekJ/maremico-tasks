@@ -93,6 +93,33 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     initializePage()
   }, [isAuthenticated, authLoading, router, params])
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showDeleteModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showDeleteModal])
+
+  // Prevent scroll jumping on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      // Prevent any automatic scroll restoration
+      if (window.scrollY === 0 && document.body.scrollTop === 0) {
+        // Don't do anything if we're already at the top
+        return
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const fetchTask = async (id: string) => {
     try {
       const response = await fetch(`/api/tasks/${id}`)
@@ -466,7 +493,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <DashboardLayout>
-      <div className={`max-w-4xl mx-auto ${isTaskOverdue(task.deadline) ? 'border-2 border-red-300 rounded-lg p-6' : ''}`}>
+      <div 
+        className={`max-w-4xl mx-auto ${isTaskOverdue(task.deadline) ? 'border-2 border-red-300 rounded-lg p-6' : ''}`}
+        style={{ 
+          minHeight: '100vh',
+          position: 'relative',
+          overflowAnchor: 'none'
+        }}
+      >
         {/* Header */}
         <div className="mb-8">
           <button
@@ -476,26 +510,26 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             <ArrowLeft className="h-5 w-5" />
             Back to Tasks
           </button>
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
             <div className="flex-1 min-w-0">
               {editing ? (
                 <input
                   type="text"
                   value={editData.title}
                   onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                  className={`w-full text-3xl font-bold border-b-2 border-blue-500 focus:outline-none focus:border-blue-600 mb-2 ${
+                  className={`w-full text-2xl sm:text-3xl font-bold border-b-2 border-blue-500 focus:outline-none focus:border-blue-600 mb-2 ${
                     isTaskOverdue(task.deadline) ? 'text-red-700' : 'text-gray-900'
                   }`}
                   placeholder="Task title"
                 />
               ) : (
-                <h1 className={`text-3xl font-bold break-words ${
+                <h1 className={`text-2xl sm:text-3xl font-bold ${
                   isTaskOverdue(task.deadline) ? 'text-red-700' : 'text-gray-900'
                 }`}>
                   {task.title}
                 </h1>
               )}
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {isTaskOverdue(task.deadline) && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                     OVERDUE
@@ -509,19 +543,19 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
               {isAdmin && editing ? (
                 <>
                   <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     <Save className="h-4 w-4" />
                     Save
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     <X className="h-4 w-4" />
                     Cancel
@@ -534,7 +568,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                       <button
                         onClick={handleTimerToggle}
                         disabled={task.status === 'COMPLETED'}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                           timerRunning 
                             ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -543,42 +577,42 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                         {timerRunning ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Pause ({formatTime(elapsedTime)})
+                            <span className="hidden sm:inline">Pause</span> ({formatTime(elapsedTime)})
                           </>
                         ) : (
                           <>
                             <Play className="h-4 w-4" />
-                            Start Timer
+                            <span className="hidden sm:inline">Start Timer</span>
                           </>
                         )}
                       </button>
                       {task.status !== 'COMPLETED' && task.timeSum > 0 && (
                         <button
                           onClick={handleCompleteTask}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
                           <div className="w-4 h-4">
                             <img src="/white-checkmark-24x24.svg" alt="Checkmark" className="w-full h-full"/>
                           </div>
-                          Complete Task
+                          <span className="hidden sm:inline">Complete Task</span>
                         </button>
                       )}
                       {task.status === 'COMPLETED' && (
                         <button
                           onClick={handleUncompleteTask}
-                          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                         >
                           <div className="w-4 h-4">
                             <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </div>
-                          Mark Uncomplete
+                          <span className="hidden sm:inline">Mark Uncomplete</span>
                         </button>
                       )}
                     </>
                   ) : (
-                    <div className="text-sm text-gray-500 px-4 py-2 bg-gray-100 rounded-lg">
+                    <div className="text-sm text-gray-500 px-4 py-2 bg-gray-100 rounded-lg text-center">
                       Only the assigned user can control the timer
                     </div>
                   )}
@@ -592,8 +626,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Description</h2>
               {editing ? (
                 <textarea
                   value={editData.description}
@@ -613,9 +647,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Task Info */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Information</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -703,7 +737,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Task Log */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Activity Log</h3>
               <div className="space-y-4">
                 {taskLogs.length > 0 ? (
@@ -739,9 +773,37 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowDeleteModal(false)} />
-            <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center" 
+            style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0,
+              overflow: 'hidden'
+            }}
+          >
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50" 
+              onClick={() => setShowDeleteModal(false)}
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0,
+                touchAction: 'none'
+              }}
+            />
+            <div 
+              className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4" 
+              style={{ 
+                maxHeight: '90vh', 
+                overflowY: 'auto',
+                touchAction: 'pan-y'
+              }}
+            >
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-shrink-0">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">

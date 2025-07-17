@@ -141,16 +141,18 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
   const canControlTimer = assignedUserId && currentUserId && assignedUserId === currentUserId
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 min-w-[120px]">
       {/* Timer Display */}
       <div className="text-center">
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <Clock className="h-4 w-4" />
-          <span>Total: {formatTime(timeSum + elapsedTime)}</span>
+          <span className="hidden sm:inline">Total: </span>
+          <span>{formatTime(timeSum + elapsedTime)}</span>
         </div>
         {isRunning && (
           <div className="text-xs text-blue-600 font-medium">
-            Active: {formatTime(elapsedTime)}
+            <span className="hidden sm:inline">Active: </span>
+            {formatTime(elapsedTime)}
           </div>
         )}
       </div>
@@ -161,26 +163,27 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
           {buttonConfig.action && (
             <button
               onClick={() => handleAction(buttonConfig.action!)}
-              className={`flex items-center justify-center gap-1 px-3 py-1 text-white text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+              className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-white text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
             >
-              <buttonConfig.icon className="h-4 w-4" />
-              {buttonConfig.label}
+              <buttonConfig.icon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{buttonConfig.label}</span>
             </button>
           )}
 
           {status !== 'COMPLETED' && (timeSum + elapsedTime) > 0 && (
             <button
               onClick={() => handleAction('complete')}
-              className="flex items-center justify-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors w-full"
+              className="flex items-center justify-center gap-1 px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors w-full"
             >
-              <CheckCircle className="h-4 w-4" />
-              Complete
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Complete</span>
             </button>
           )}
         </div>
       ) : (
         <div className="text-xs text-gray-500 text-center px-2 py-1 bg-gray-100 rounded">
-          Only assigned user can control timer
+          <span className="hidden sm:inline">Only assigned user can control timer</span>
+          <span className="sm:hidden">Not assigned</span>
         </div>
       )}
     </div>
