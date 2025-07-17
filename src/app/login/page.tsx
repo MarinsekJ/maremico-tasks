@@ -44,12 +44,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">M</span>
-          </div>
+        <div className="text-center">          
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Welcome to M Task
           </h2>
@@ -139,10 +136,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Demo credentials: admin / password123
-            </p>
+          <div className="w-92 items-center justify-center">
+          <img src="/Maremico-logo-popolno-lezeci.svg" alt="Maremico Logo"/>
           </div>
         </div>
       </div>

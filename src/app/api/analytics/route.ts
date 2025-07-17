@@ -72,6 +72,41 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Get user creation year
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { createdAt: true }
+    })
+    
+    const userCreatedYear = user ? new Date(user.createdAt).getFullYear() : new Date().getFullYear()
+    
+    // Get all years where user has tasks
+    const allUserTasks = await prisma.task.findMany({
+      where: { assignedUserId: targetUserId },
+      select: { createdAt: true, updatedAt: true }
+    })
+    
+    const allUserGroupTasks = await prisma.groupTask.findMany({
+      where: {
+        groupId: { in: groupIds }
+      },
+      select: { createdAt: true, updatedAt: true }
+    })
+    
+    // Collect all years from task creation and completion dates
+    const taskYears = new Set<number>()
+    allUserTasks.forEach(task => {
+      taskYears.add(new Date(task.createdAt).getFullYear())
+      taskYears.add(new Date(task.updatedAt).getFullYear())
+    })
+    
+    allUserGroupTasks.forEach(task => {
+      taskYears.add(new Date(task.createdAt).getFullYear())
+      taskYears.add(new Date(task.updatedAt).getFullYear())
+    })
+    
+    const availableYears = Array.from(taskYears).sort((a, b) => a - b)
+    
     // Calculate analytics
     const adminTasks = completedTasks.filter(task => task.type === 'ADMIN_TASK')
     const regularTasks = completedTasks.filter(task => task.type === 'REGULAR_TASK')
@@ -96,7 +131,9 @@ export async function GET(request: NextRequest) {
         admin: adminTasks.sort((a, b) => b.timeSum - a.timeSum),
         regular: regularTasks.sort((a, b) => b.timeSum - a.timeSum),
         group: completedGroupTasks.sort((a, b) => b.timeSum - a.timeSum)
-      }
+      },
+      userCreatedYear,
+      availableYears
     }
 
     return NextResponse.json(analytics)

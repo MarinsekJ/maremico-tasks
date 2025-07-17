@@ -43,7 +43,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const adminNavigation = [
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Groups', href: '/admin/groups', icon: FolderOpen },
-    { name: 'All Analytics', href: '/admin/analytics', icon: BarChart3 },
   ]
 
   return (
@@ -70,7 +69,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {navigation.map((item) => (
               <Link
                 key={item.name}
-                href={item.href}
+                href={`${item.href}?t=${Date.now()}`}
                 className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 onClick={() => setSidebarOpen(false)}
               >
@@ -115,7 +114,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {navigation.map((item) => (
               <Link
                 key={item.name}
-                href={item.href}
+                href={`${item.href}?t=${Date.now()}`}
                 className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               >
                 <item.icon className="mr-3 h-5 w-5" />
