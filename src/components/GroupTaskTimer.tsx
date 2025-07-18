@@ -117,21 +117,21 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
           icon: Play,
           label: 'Start',
           action: 'start',
-          className: 'bg-green-600 hover:bg-green-700'
+          className: 'bg-green-600 hover:bg-green-700 text-white'
         }
       case 'IN_PROGRESS':
         return {
           icon: Pause,
           label: 'Pause',
           action: 'pause',
-          className: 'bg-yellow-600 hover:bg-yellow-700'
+          className: 'text-black' // Using inline style for custom color
         }
       case 'PAUSED':
         return {
           icon: Play,
           label: 'Resume',
           action: 'start',
-          className: 'bg-blue-600 hover:bg-blue-700'
+          className: 'bg-black hover:bg-gray-800 text-white'
         }
       case 'COMPLETED':
         return {
@@ -157,7 +157,7 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
       {/* Timer Display */}
       <div className="text-center">
         {isRunning && (
-          <div className="text-xs text-blue-600 font-medium mb-1">
+          <div className="text-xs text-gray-600 font-medium mb-1">
             <span className="hidden sm:inline">Active: </span>
             {formatTime(elapsedTime)}
           </div>
@@ -169,7 +169,8 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
         {buttonConfig.action && (
           <button
             onClick={() => handleAction(buttonConfig.action!)}
-            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-white text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+            style={status === 'IN_PROGRESS' ? { backgroundColor: '#b9a057', color: 'black' } : {}}
           >
             <buttonConfig.icon className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">{buttonConfig.label}</span>

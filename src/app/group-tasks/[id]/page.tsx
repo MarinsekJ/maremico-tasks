@@ -317,7 +317,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Group Task Not Found</h2>
           <button
             onClick={() => router.push('/group-tasks')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
           >
             Back to Group Tasks
           </button>
@@ -385,7 +385,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
                   <>
                     <button
                       onClick={handleEditClick}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
                     >
                       Edit
                     </button>
@@ -479,7 +479,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
               {groupTask.status === 'WAITING' && (
                 <button
                   onClick={() => handleTimerAction('start')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
                 >
                   Start
                 </button>
@@ -488,13 +488,14 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
                 <>
                   <button
                     onClick={() => handleTimerAction('pause')}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                    className="text-black px-4 py-2 rounded"
+            style={{ backgroundColor: '#b9a057' }}
                   >
                     Pause
                   </button>
                   <button
                     onClick={() => handleTimerAction('complete')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
                   >
                     Complete
                   </button>
@@ -504,7 +505,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
                 <>
                   <button
                     onClick={() => handleTimerAction('start')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
                   >
                     Resume
                   </button>

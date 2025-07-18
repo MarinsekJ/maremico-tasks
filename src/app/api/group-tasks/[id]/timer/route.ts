@@ -19,6 +19,9 @@ export async function POST(
 
     const { action, timeSpent } = await request.json()
     const { id: groupTaskId } = await params
+    
+    console.log(`[DEBUG] User ID from token: ${decoded.id}`)
+    console.log(`[DEBUG] Group task ID: ${groupTaskId}`)
 
     // Use a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx) => {
@@ -47,8 +50,14 @@ export async function POST(
       }
 
       // Check if user can access this group task
+      console.log(`[DEBUG] Checking group membership for user ${decoded.id} in group ${groupTask.group.id}`)
+      console.log(`[DEBUG] Group users:`, groupTask.group.users.map(ug => ({ userId: ug.userId, userName: ug.user?.username || 'N/A' })))
+      
       const userInGroup = groupTask.group.users.some(ug => ug.userId === decoded.id)
+      console.log(`[DEBUG] User in group: ${userInGroup}`)
+      
       if (!userInGroup) {
+        console.log(`[DEBUG] User ${decoded.id} is not a member of group ${groupTask.group.id}`)
         throw new Error('Forbidden')
       }
 

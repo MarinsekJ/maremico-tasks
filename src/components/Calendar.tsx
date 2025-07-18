@@ -63,11 +63,12 @@ export default function Calendar({ selectedDate, onDateSelect, tasks }: Calendar
               key={day.toISOString()}
               className={`text-center p-2 rounded-lg cursor-pointer transition-colors ${
                 isSameDay(day, selectedDate)
-                  ? 'bg-blue-100 text-blue-700 font-medium'
+                  ? 'bg-gray-200 text-black font-medium'
                   : isToday(day)
-                  ? 'bg-gray-100 text-gray-700'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'text-black'
+                  : 'text-black hover:bg-gray-50'
               }`}
+              style={isToday(day) ? { backgroundColor: '#e3d9bc'} : {}}
               onClick={() => onDateSelect(day)}
             >
               <div className="text-xs font-medium">

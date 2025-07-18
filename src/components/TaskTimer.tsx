@@ -119,27 +119,27 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
 
   const getButtonConfig = () => {
     switch (status) {
-      case 'WAITING':
-        return {
-          icon: Play,
-          label: 'Start',
-          action: 'start',
-          className: 'bg-blue-600 hover:bg-blue-700'
-        }
-      case 'IN_PROGRESS':
-        return {
-          icon: Pause,
-          label: 'Pause',
-          action: 'pause',
-          className: 'bg-yellow-600 hover:bg-yellow-700'
-        }
-      case 'PAUSED':
-        return {
-          icon: Play,
-          label: 'Resume',
-          action: 'start',
-          className: 'bg-blue-600 hover:bg-blue-700'
-        }
+              case 'WAITING':
+          return {
+            icon: Play,
+            label: 'Start',
+            action: 'start',
+            className: 'bg-black hover:bg-gray-800'
+          }
+              case 'IN_PROGRESS':
+          return {
+            icon: Pause,
+            label: 'Pause',
+            action: 'pause',
+            className: 'text-black' // Using inline style for custom color
+          }
+              case 'PAUSED':
+          return {
+            icon: Play,
+            label: 'Resume',
+            action: 'start',
+            className: 'bg-black hover:bg-gray-800'
+          }
       case 'COMPLETED':
         return {
           icon: CheckCircle,
@@ -147,13 +147,13 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
           action: null,
           className: 'bg-gray-400 cursor-not-allowed'
         }
-      default:
-        return {
-          icon: Play,
-          label: 'Start',
-          action: 'start',
-          className: 'bg-blue-600 hover:bg-blue-700'
-        }
+              default:
+          return {
+            icon: Play,
+            label: 'Start',
+            action: 'start',
+            className: 'bg-black hover:bg-gray-800'
+          }
     }
   }
 
@@ -185,7 +185,8 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
           {buttonConfig.action && (
             <button
               onClick={() => handleAction(buttonConfig.action!)}
-              className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-white text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+              className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+              style={status === 'IN_PROGRESS' ? { backgroundColor: '#b9a057', color: 'black' } : {}}
             >
               <buttonConfig.icon className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{buttonConfig.label}</span>

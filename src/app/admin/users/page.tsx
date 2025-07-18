@@ -114,7 +114,7 @@ export default function AdminUsersPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
               </select>
               <button
                 onClick={() => router.push('/admin/users/create')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
                 <Plus className="h-5 w-5" />
                 New User

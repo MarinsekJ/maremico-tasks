@@ -51,6 +51,17 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     try {
       setLoading(true)
       
+      // Fetch current user info to check if they're an admin
+      const userResponse = await fetch('/api/auth/me')
+      const userData = await userResponse.json()
+      const isAdmin = userData.userType === 'ADMIN'
+      
+      console.log(`[DEBUG] Current user:`, {
+        id: currentUserId,
+        userType: userData.userType,
+        isAdmin
+      })
+      
       // Fetch regular tasks
       const regularTasksResponse = await fetch('/api/tasks')
       const regularTasks = await regularTasksResponse.json()
@@ -79,11 +90,25 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       const groupTasks = await groupTasksResponse.json()
       
       // Find running group task where user is a member
+      // Even admins can only interact with group tasks if they're members of the group
       const runningGroupTask = groupTasks.find((task: any) => {
         const isRunning = task.status === 'IN_PROGRESS'
         const isMember = task.group?.users?.some((userGroup: any) => userGroup.userId === currentUserId)
+        console.log(`[DEBUG] Checking group task ${task.id} (${task.title}):`, {
+          isRunning,
+          isMember,
+          currentUserId,
+          groupUsers: task.group?.users?.map((u: any) => ({ userId: u.userId, username: u.user?.username }))
+        })
         return isRunning && isMember
       })
+
+      console.log(`[DEBUG] Found running group task:`, runningGroupTask ? {
+        id: runningGroupTask.id,
+        title: runningGroupTask.title,
+        groupId: runningGroupTask.groupId,
+        groupUsers: runningGroupTask.group?.users?.map((u: any) => ({ userId: u.userId, username: u.user?.username }))
+      } : null)
 
       if (runningGroupTask) {
         setActiveTask({
@@ -108,6 +133,12 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
 
   const handlePause = async () => {
     if (!activeTask) return
+
+    console.log(`[DEBUG] Pausing task:`, {
+      taskId: activeTask.id,
+      taskType: activeTask.type,
+      currentUserId
+    })
 
     try {
       const endpoint = activeTask.type === 'GROUP_TASK' 
@@ -137,6 +168,12 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
 
   const handleComplete = async () => {
     if (!activeTask) return
+
+    console.log(`[DEBUG] Completing task:`, {
+      taskId: activeTask.id,
+      taskType: activeTask.type,
+      currentUserId
+    })
 
     try {
       const endpoint = activeTask.type === 'GROUP_TASK' 
@@ -281,7 +318,8 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       <div className="flex gap-2">
         <button
           onClick={handlePause}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-black text-sm rounded-lg transition-colors"
+            style={{ backgroundColor: '#b9a057' }}
         >
           <Pause className="h-4 w-4" />
           <span className="hidden sm:inline">Pause</span>

@@ -15,6 +15,15 @@ interface GroupTask {
   group: {
     name: string
     color: string
+    users?: Array<{
+      userId: string
+      user: {
+        id: string
+        name: string
+        surname: string
+        username: string
+      }
+    }>
   }
   timePerUser: {
     user: {
@@ -34,6 +43,24 @@ interface GroupTaskListProps {
 export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTaskListProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
+  const [user, setUser] = useState<any>(null)
+
+  // Fetch current user
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
+      }
+    }
+    
+    fetchUser()
+  }, [])
 
   // Update activeTaskId when tasks are refreshed
   useEffect(() => {
@@ -82,11 +109,16 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
     return `${hours}h ${minutes}m`
   }
 
-  const filteredTasks = selectedGroup === 'all' 
-    ? tasks 
-    : tasks.filter(task => task.group.name === selectedGroup)
+  // Filter tasks to only show those where the user is a member
+  const userTasks = user ? tasks.filter(task => 
+    task.group?.users?.some((groupUser: any) => groupUser.userId === user.id)
+  ) : []
 
-  const uniqueGroups = Array.from(new Set(tasks.map(task => task.group.name)))
+  const filteredTasks = selectedGroup === 'all'
+    ? userTasks 
+    : userTasks.filter(task => task.group.name === selectedGroup)
+
+  const uniqueGroups = Array.from(new Set(userTasks.map(task => task.group.name)))
 
   if (loading) {
     return (
@@ -100,13 +132,15 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
     )
   }
 
-  if (tasks.length === 0) {
+  if (userTasks.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="text-gray-400 mb-2">
           <Users className="h-12 w-12 mx-auto" />
         </div>
-        <p className="text-gray-500">No group tasks found</p>
+        <p className="text-gray-500">
+          {user ? 'No group tasks found for your groups' : 'Loading...'}
+        </p>
       </div>
     )
   }
@@ -184,21 +218,23 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
 
                 {/* Time per user */}
                 {task.timePerUser.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                  <div className="rounded-lg p-3 mb-3" style={{ backgroundColor: '#e3d9bc' }}>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       Time per User
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {task.timePerUser.map((timeEntry, index) => (
+                      {task.timePerUser
+                        .sort((a, b) => b.timeSpent - a.timeSpent) // Sort by time spent (most to least)
+                        .map((timeEntry, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between bg-white px-3 py-2 rounded-md border border-blue-100"
+                          className="flex items-center justify-between bg-white px-3 py-2 rounded-md "
                         >
                           <span className="font-medium text-sm text-gray-700">
                             {timeEntry.user.name} {timeEntry.user.surname}
                           </span>
-                          <span className="text-sm font-semibold text-blue-600">
+                          <span className="text-sm font-semibold text-gray-600">
                             {formatTime(timeEntry.timeSpent)}
                           </span>
                         </div>

@@ -184,24 +184,26 @@ export default function DashboardPage() {
             </div>
 
             {/* Tasks with No Deadline */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Tasks with No Deadline
-                </h2>
-                <div className="text-left sm:text-right">
-                  <p className="text-sm text-gray-500">
-                    No deadline set
-                  </p>
+            {getUndatedTasks().length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                    Tasks with No Deadline
+                  </h2>
+                  <div className="text-left sm:text-right">
+                    <p className="text-sm text-gray-500">
+                      No deadline set
+                    </p>
+                  </div>
                 </div>
+                <TaskList 
+                  tasks={sortTasksByDeadline(getUndatedTasks())} 
+                  loading={loadingTasks}
+                  onTaskUpdate={fetchTasks}
+                  currentUserId={user.id}
+                />
               </div>
-              <TaskList 
-                tasks={sortTasksByDeadline(getUndatedTasks())} 
-                loading={loadingTasks}
-                onTaskUpdate={fetchTasks}
-                currentUserId={user.id}
-              />
-            </div>
+            )}
           </div>
 
           {/* Calendar */}

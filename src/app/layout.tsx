@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const nunitoSans = Nunito_Sans({ 
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700", "800", "900"],
+  variable: "--font-nunito-sans"
+});
 
 export const metadata: Metadata = {
   title: "M Task - Task Management System",
@@ -17,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={nunitoSans.className}>
         <AuthProvider>
           <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
             {children}

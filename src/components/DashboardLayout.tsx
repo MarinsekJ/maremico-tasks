@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Dynamic Title Component */}
       <DynamicTitle currentUserId={user?.id} />
       
@@ -58,10 +58,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 items-center justify-between px-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
-              </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">M Task</span>
+              <img src="/Maremico-tasks.svg" alt="Maremico Logo" className="w-32"/>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -109,17 +106,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </>
             )}
           </nav>
+          
+          {/* Powered by section - Mobile */}
+          <div className="px-4 py-4 border-t border-gray-200">
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-600 text-center">
+                Powered by
+              </p>
+              <img src="/jaka-marinsek-logo-only.svg" alt="Maremico Logo" className="h-5 mt-2 align-middle"/>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
-          <div className="flex h-16 items-center px-4">
-            <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <span className="ml-2 text-xl font-bold text-gray-900">M Task</span>
+          <div className="flex h-16 px-4">
+              <img src="/Maremico-tasks.svg" alt="Maremico Logo" className="w-40"/>
           </div>
           
           {/* Active Task Card - Desktop */}
@@ -158,6 +162,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </>
             )}
           </nav>
+          
+          {/* Powered by section - Desktop */}
+          <div className="px-4 py-4 border-t border-gray-200">
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-xs text-gray-600 text-center">
+                Powered by
+              </p>
+              <img src="/jaka-marinsek-logo-only.svg" alt="Maremico Logo" className="h-5 mt-2"/>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -180,7 +194,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="relative">
                 <button
                   onClick={() => setShowCreateMenu(!showCreateMenu)}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Create
@@ -230,8 +244,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   href="/profile"
                   className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
                 >
-                  <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#b9a057' }}>
+                    <span className="text-black text-sm font-regular">
                       {user?.name?.charAt(0).toUpperCase()}{user?.surname?.charAt(0).toUpperCase()}
                     </span>
                   </div>

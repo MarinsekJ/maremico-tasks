@@ -467,7 +467,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -482,13 +482,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (!task) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Task not found</h3>
           <p className="text-gray-600 mb-4">The task you're looking for doesn't exist.</p>
           <button
             onClick={() => router.push('/tasks')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             Back to Tasks
           </button>
@@ -576,9 +576,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                         disabled={task.status === 'COMPLETED'}
                         className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                           timerRunning 
-                            ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? 'text-black' 
+                            : 'bg-black hover:bg-gray-800 text-white'
                         } ${task.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={timerRunning ? { backgroundColor: '#b9a057' } : {}}
                       >
                         {timerRunning ? (
                           <>

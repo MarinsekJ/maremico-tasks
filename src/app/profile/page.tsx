@@ -6,6 +6,7 @@ import { ArrowLeft, User, Mail, Calendar, Shield, Users, Clock, Edit } from 'luc
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
 import { formatDate } from '@/lib/utils'
+import { format } from 'date-fns'
 
 interface Group {
   id: string
@@ -32,10 +33,16 @@ interface UserWithGroups {
   groups: UserGroup[]
 }
 
+interface TaskStats {
+  totalAssigned: number
+  totalCompleted: number
+}
+
 export default function ProfilePage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const [userData, setUserData] = useState<UserWithGroups | null>(null)
+  const [taskStats, setTaskStats] = useState<TaskStats>({ totalAssigned: 0, totalCompleted: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -46,6 +53,7 @@ export default function ProfilePage() {
       }
       
       fetchUserData()
+      fetchTaskStats()
     }
   }, [isAuthenticated, authLoading, user, router])
 
@@ -67,6 +75,34 @@ export default function ProfilePage() {
       console.error('Error fetching user data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTaskStats = async () => {
+    try {
+      const response = await fetch('/api/tasks')
+      if (response.ok) {
+        const tasks = await response.json()
+        
+        // Get current month boundaries
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        
+        // Filter tasks for current month
+        const currentMonthTasks = tasks.filter((task: any) => {
+          const taskDate = new Date(task.createdAt)
+          return taskDate >= startOfMonth && taskDate <= endOfMonth
+        })
+        
+        // Count assigned and completed tasks
+        const totalAssigned = currentMonthTasks.length
+        const totalCompleted = currentMonthTasks.filter((task: any) => task.status === 'COMPLETED').length
+        
+        setTaskStats({ totalAssigned, totalCompleted })
+      }
+    } catch (error) {
+      console.error('Error fetching task statistics:', error)
     }
   }
 
@@ -116,8 +152,8 @@ export default function ProfilePage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6 text-center">
               <div className="text-center mb-6">
-                <div className="h-24 w-24 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-white text-2xl">
+                <div className="h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#b9a057' }}>
+                  <span className="text-black text-2xl font-bold">
                     {userData.name.charAt(0).toUpperCase()}{userData.surname.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -173,7 +209,7 @@ export default function ProfilePage() {
                   <div className="mt-4">
                     <button
                       onClick={() => router.push(`/admin/users/${userData.id}`)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                     >
                       <Edit className="h-4 w-4" />
                       Edit Profile
@@ -221,9 +257,22 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Account Statistics (placeholder for future features) */}
+            {/* Account Statistics */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Statistics</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Account Statistics - {format(new Date(), 'MMMM yyyy')}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => router.push('/analytics')}
+                  className="text-sm text-black underline hover:text-gray-700 transition-colors"
+                >
+                  See Full Analytics
+                </button>
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center gap-2">
@@ -231,8 +280,8 @@ export default function ProfilePage() {
                       <span className="text-white font-bold text-sm">T</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Total Tasks</p>
-                      <p className="text-2xl font-bold text-blue-600">-</p>
+                      <p className="text-sm font-medium text-gray-900">Total Tasks Assigned</p>
+                      <p className="text-2xl font-bold text-blue-600">{taskStats.totalAssigned}</p>
                     </div>
                   </div>
                 </div>
@@ -243,14 +292,14 @@ export default function ProfilePage() {
                       <span className="text-white font-bold text-sm">C</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Completed</p>
-                      <p className="text-2xl font-bold text-green-600">-</p>
+                      <p className="text-sm font-medium text-gray-900">Tasks Completed</p>
+                      <p className="text-2xl font-bold text-green-600">{taskStats.totalCompleted}</p>
                     </div>
                   </div>
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-4">
-                Statistics feature coming soon...
+                Statistics for the current month
               </p>
             </div>
           </div>

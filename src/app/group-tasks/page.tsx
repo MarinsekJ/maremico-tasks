@@ -254,7 +254,7 @@ export default function GroupTasksPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -333,7 +333,7 @@ export default function GroupTasksPage() {
                 {user?.userType === 'ADMIN' && (
                   <button
                     onClick={() => router.push('/group-tasks/create')}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                     New Group Task
@@ -353,6 +353,11 @@ export default function GroupTasksPage() {
             // Check if user can interact with this task (must be a member of the group)
             const canInteractWithTask = user && 
               task.group?.users?.some((groupUser: any) => groupUser.userId === user.id)
+            
+            // Debug logging
+            console.log(`[DEBUG] Task: ${task.title}, User: ${user?.username} (ID: ${user?.id}), Can interact: ${canInteractWithTask}`)
+            console.log(`[DEBUG] Group users:`, task.group?.users?.map((gu: any) => ({ userId: gu.userId, username: gu.user?.username })))
+            console.log(`[DEBUG] User ID comparison:`, user?.id, 'vs group users:', task.group?.users?.map((gu: any) => gu.userId))
             return (
             <div 
               key={task.id} 
@@ -432,9 +437,10 @@ export default function GroupTasksPage() {
                       disabled={task.status === 'COMPLETED'}
                       className={`flex-1 px-4 py-3 text-sm rounded transition-colors flex items-center justify-center ${
                         runningTimers[task.id]
-                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                      ? 'text-black' 
+                            : 'bg-black hover:bg-gray-800 text-white'
                       } ${task.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={runningTimers[task.id] ? { backgroundColor: '#b9a057' } : {}}
                     >
                       {runningTimers[task.id] ? (
                         <>
