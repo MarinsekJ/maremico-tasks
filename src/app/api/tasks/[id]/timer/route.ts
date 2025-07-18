@@ -44,6 +44,95 @@ export async function POST(
 
       switch (action) {
         case 'start':
+          console.log(`[DEBUG] Starting task ${taskId} for user ${decoded.id}`)
+          
+          // Find and pause any other running task for this user
+          const otherRunningTasks = await tx.task.findMany({
+            where: {
+              assignedUserId: decoded.id,
+              status: 'IN_PROGRESS',
+              id: { not: taskId }
+            }
+          })
+
+          console.log(`[DEBUG] Found ${otherRunningTasks.length} other running tasks for user ${decoded.id}`)
+
+          // Pause all other running tasks
+          for (const runningTask of otherRunningTasks) {
+            console.log(`[DEBUG] Pausing task ${runningTask.id} (${runningTask.title})`)
+            await tx.task.update({
+              where: { id: runningTask.id },
+              data: { 
+                status: 'PAUSED',
+                timeSum: runningTask.timeSum + (timeSpent || 0)
+              }
+            })
+
+            // Log the pause action for other tasks
+            try {
+              await tx.taskLog.create({
+                data: {
+                  userId: decoded.id,
+                  taskId: runningTask.id,
+                  taskType: runningTask.type,
+                  logType: 'PAUSED_TIMER',
+                  details: `Auto-paused when starting task: ${task.title}`
+                }
+              })
+            } catch (logError) {
+              console.warn('Failed to create task log for auto-pause:', logError)
+            }
+          }
+
+          // Also pause any running group tasks for this user
+          const userGroups = await tx.userGroup.findMany({
+            where: { userId: decoded.id },
+            select: { groupId: true }
+          })
+          const userGroupIds = userGroups.map(ug => ug.groupId)
+
+          console.log(`[DEBUG] User ${decoded.id} is in groups: ${userGroupIds.join(', ')}`)
+
+          if (userGroupIds.length > 0) {
+            const runningGroupTasks = await tx.groupTask.findMany({
+              where: {
+                status: 'IN_PROGRESS',
+                groupId: { in: userGroupIds }
+              }
+            })
+
+            console.log(`[DEBUG] Found ${runningGroupTasks.length} running group tasks for user ${decoded.id}`)
+
+            // Pause all running group tasks
+            for (const runningGroupTask of runningGroupTasks) {
+              console.log(`[DEBUG] Pausing group task ${runningGroupTask.id} (${runningGroupTask.title})`)
+              await tx.groupTask.update({
+                where: { id: runningGroupTask.id },
+                data: { 
+                  status: 'PAUSED',
+                  timeSum: runningGroupTask.timeSum + (timeSpent || 0)
+                }
+              })
+
+              // Log the pause action for group tasks
+              try {
+                await tx.taskLog.create({
+                  data: {
+                    userId: decoded.id,
+                    groupTaskId: runningGroupTask.id,
+                    taskType: 'GROUP_TASK',
+                    logType: 'PAUSED_TIMER',
+                    details: `Auto-paused when starting regular task: ${task.title}`
+                  }
+                })
+              } catch (logError) {
+                console.warn('Failed to create task log for auto-pause:', logError)
+              }
+            }
+          }
+
+          console.log(`[DEBUG] Starting task ${taskId} with status IN_PROGRESS`)
+          // Start the current task
           updatedTask = await tx.task.update({
             where: { id: taskId },
             data: { status: 'IN_PROGRESS' },

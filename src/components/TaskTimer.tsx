@@ -44,6 +44,20 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
     }
   }, [isActive, status])
 
+  // Additional effect to handle auto-pause scenarios
+  useEffect(() => {
+    // If status is not IN_PROGRESS, ensure timer is stopped
+    if (status !== 'IN_PROGRESS') {
+      console.log(`[DEBUG] TaskTimer: Task ${taskId} status changed to ${status}, stopping timer`)
+      setIsRunning(false)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      setElapsedTime(0)
+    }
+  }, [status, taskId])
+
   // Save timer state to session storage when component unmounts
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -84,6 +98,14 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
       if (response.ok) {
         const updatedTask = await response.json()
         onStatusChange(updatedTask.status)
+        
+        // If starting a task, clear elapsed time since other tasks will be auto-paused
+        if (action === 'start') {
+          setElapsedTime(0)
+        }
+        
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       } else {
         const errorData = await response.json()
         if (errorData.error && errorData.error.includes('Only the assigned user')) {

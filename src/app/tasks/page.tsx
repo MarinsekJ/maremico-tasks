@@ -74,6 +74,15 @@ export default function TasksPage() {
     }
   }, [selectedUserId, user])
 
+  // Listen for task status changes from other pages
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchTasks()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [])
 
 
   const fetchUsers = async () => {
@@ -179,6 +188,8 @@ export default function TasksPage() {
           })
           // Refresh tasks
           fetchTasks()
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
         }
       } else {
         // Start timer
@@ -193,12 +204,24 @@ export default function TasksPage() {
         })
 
         if (response.ok) {
-          setRunningTimers(prev => ({
-            ...prev,
-            [task.id]: { startTime: Date.now(), elapsed: 0 }
-          }))
-          // Refresh tasks
+          // Clear any other running timers since only one task can be active at a time
+          setRunningTimers(prev => {
+            const updated = {}
+            // Only keep the new task as running
+            updated[task.id] = { startTime: Date.now(), elapsed: 0 }
+            return updated
+          })
+          // Refresh tasks - this will also reflect any auto-paused group tasks
           fetchTasks()
+          
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          
+          // Trigger a page refresh to update group tasks if they were auto-paused
+          // This ensures the group tasks page also reflects the changes
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          }, 100)
         }
       }
     } catch (error) {
@@ -229,6 +252,8 @@ export default function TasksPage() {
         })
         // Refresh tasks
         fetchTasks()
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       }
     } catch (error) {
       console.error('Error completing task:', error)

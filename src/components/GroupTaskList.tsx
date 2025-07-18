@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Clock, Play, Pause, CheckCircle, AlertCircle, Users } from 'lucide-react'
 import GroupTaskTimer from './GroupTaskTimer'
 import { formatDate } from '@/lib/utils'
@@ -34,6 +34,17 @@ interface GroupTaskListProps {
 export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTaskListProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
+
+  // Update activeTaskId when tasks are refreshed
+  useEffect(() => {
+    // Find the task that is currently IN_PROGRESS
+    const runningTask = tasks.find(task => task.status === 'IN_PROGRESS')
+    if (runningTask) {
+      setActiveTaskId(runningTask.id)
+    } else {
+      setActiveTaskId(null)
+    }
+  }, [tasks])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -205,10 +216,12 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
                   isActive={activeTaskId === task.id}
                   onStatusChange={(newStatus) => {
                     if (newStatus === 'IN_PROGRESS') {
+                      // Clear any other active task since only one can be active at a time
                       setActiveTaskId(task.id)
                     } else {
                       setActiveTaskId(null)
                     }
+                    // Refresh the task list to reflect the changes
                     onTaskUpdate()
                   }}
                 />

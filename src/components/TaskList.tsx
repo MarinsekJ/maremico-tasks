@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, Play, Pause, CheckCircle, AlertCircle } from 'lucide-react'
 import TaskTimer from './TaskTimer'
@@ -35,6 +35,17 @@ interface TaskListProps {
 export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }: TaskListProps) {
   const router = useRouter()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+
+  // Update activeTaskId when tasks are refreshed
+  useEffect(() => {
+    // Find the task that is currently IN_PROGRESS
+    const runningTask = tasks.find(task => task.status === 'IN_PROGRESS')
+    if (runningTask) {
+      setActiveTaskId(runningTask.id)
+    } else {
+      setActiveTaskId(null)
+    }
+  }, [tasks])
 
   const getStatusColor = (status: string) => {
     switch (status) {

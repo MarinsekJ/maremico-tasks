@@ -217,6 +217,9 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
         }
         
         fetchLogs()
+        
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       }
     } catch (error) {
       console.error('Error updating timer:', error)
@@ -333,6 +336,10 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
     user.userType === 'ADMIN' || 
     groupTask.group.users?.some(groupUser => groupUser.userId === user.id)
   )
+
+  // Check if user can interact with timer (must be a member of the group)
+  const canInteractWithTimer = user && 
+    groupTask.group.users?.some(groupUser => groupUser.userId === user.id)
 
   console.log('Rendering with isEditing:', isEditing, 'form values:', { title, description, deadline, status })
   console.log('Can edit:', canEdit)
@@ -467,7 +474,8 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
             <div className="text-2xl text-gray-700 font-mono">
               {formatTime(Math.floor(elapsedTime / 1000))}
             </div>
-            <div className="flex gap-2">
+            {canInteractWithTimer ? (
+              <div className="flex gap-2">
               {groupTask.status === 'WAITING' && (
                 <button
                   onClick={() => handleTimerAction('start')}
@@ -517,6 +525,11 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
                 </button>
               )}
             </div>
+            ) : (
+              <div className="text-gray-500 text-sm">
+                You can view this task but cannot interact with it since you are not a member of this group
+              </div>
+            )}
           </div>
         </div>
 

@@ -47,9 +47,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">          
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome to M Task
-          </h2>
+          <img src="/Maremico-tasks.svg" alt="Maremico Logo" className="w-50 mx-auto"/>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to your account to continue
           </p>
@@ -137,7 +135,10 @@ export default function LoginPage() {
           </form>
 
           <div className="w-92 items-center justify-center">
-          <img src="/Maremico-logo-popolno-lezeci.svg" alt="Maremico Logo"/>
+            <p className="mt-2 text-sm text-gray-600 text-center">
+              Powered by
+            </p>
+            <img src="/Maremico-logo-popolno-lezeci.svg" alt="Maremico Logo" className="w-55 mx-auto"/>
           </div>
         </div>
       </div>

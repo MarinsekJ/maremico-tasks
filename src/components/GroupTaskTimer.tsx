@@ -42,6 +42,20 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
     }
   }, [isActive, status])
 
+  // Additional effect to handle auto-pause scenarios
+  useEffect(() => {
+    // If status is not IN_PROGRESS, ensure timer is stopped
+    if (status !== 'IN_PROGRESS') {
+      console.log(`[DEBUG] GroupTaskTimer: Task ${taskId} status changed to ${status}, stopping timer`)
+      setIsRunning(false)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      setElapsedTime(0)
+    }
+  }, [status, taskId])
+
   // Save timer state to session storage when component unmounts
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -82,6 +96,14 @@ export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onSt
       if (response.ok) {
         const updatedTask = await response.json()
         onStatusChange(updatedTask.status)
+        
+        // If starting a task, clear elapsed time since other tasks will be auto-paused
+        if (action === 'start') {
+          setElapsedTime(0)
+        }
+        
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       }
     } catch (error) {
       console.error('Error updating group task timer:', error)

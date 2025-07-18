@@ -135,6 +135,16 @@ export default function GroupTasksPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Listen for task status changes from other pages
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchGroupTasks()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [])
+
   const handleTimerToggle = async (task: GroupTask) => {
     try {
       const isRunning = runningTimers[task.id]
@@ -160,6 +170,8 @@ export default function GroupTasksPage() {
           })
           // Refresh tasks
           fetchGroupTasks()
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
         }
       } else {
         // Start timer
@@ -174,12 +186,24 @@ export default function GroupTasksPage() {
         })
 
         if (response.ok) {
-          setRunningTimers(prev => ({
-            ...prev,
-            [task.id]: { startTime: Date.now(), elapsed: 0 }
-          }))
-          // Refresh tasks
+          // Clear any other running timers since only one task can be active at a time
+          setRunningTimers(prev => {
+            const updated: { [key: string]: { startTime: number; elapsed: number } } = {}
+            // Only keep the new task as running
+            updated[task.id] = { startTime: Date.now(), elapsed: 0 }
+            return updated
+          })
+          // Refresh tasks - this will also reflect any auto-paused regular tasks
           fetchGroupTasks()
+          
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          
+          // Trigger a page refresh to update regular tasks if they were auto-paused
+          // This ensures the regular tasks page also reflects the changes
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          }, 100)
         }
       }
     } catch (error) {
@@ -210,6 +234,8 @@ export default function GroupTasksPage() {
         })
         // Refresh tasks
         fetchGroupTasks()
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       }
     } catch (error) {
       console.error('Error completing task:', error)
@@ -323,6 +349,10 @@ export default function GroupTasksPage() {
           {filteredGroupTasks.map((task) => {
             const overdue = isTaskOverdue(task.deadline)
             const totalTimeSpent = task.timePerUser.reduce((sum: number, time: { timeSpent: number }) => sum + time.timeSpent, 0)
+            
+            // Check if user can interact with this task (must be a member of the group)
+            const canInteractWithTask = user && 
+              task.group?.users?.some((groupUser: any) => groupUser.userId === user.id)
             return (
             <div 
               key={task.id} 
@@ -392,46 +422,52 @@ export default function GroupTasksPage() {
                   </div>        
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleTimerToggle(task)
-                    }}
-                    disabled={task.status === 'COMPLETED'}
-                    className={`flex-1 px-4 py-3 text-sm rounded transition-colors flex items-center justify-center ${
-                      runningTimers[task.id]
-                        ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    } ${task.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {runningTimers[task.id] ? (
-                      <>
-                        <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        {formatTime(runningTimers[task.id].elapsed)}
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Timer
-                      </>
-                    )}
-                  </button>
-                  {task.status !== 'COMPLETED' && totalTimeSpent > 0 && (
+                {canInteractWithTask ? (
+                  <div className="flex gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleCompleteTask(task)
+                        handleTimerToggle(task)
                       }}
-                      className="flex-1 px-4 py-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center"
+                      disabled={task.status === 'COMPLETED'}
+                      className={`flex-1 px-4 py-3 text-sm rounded transition-colors flex items-center justify-center ${
+                        runningTimers[task.id]
+                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      } ${task.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <div className="w-4 h-4 mr-2">
-                        <img src="/white-checkmark-24x24.svg" alt="Checkmark" className="w-full h-full"/>
-                      </div>
-                      Complete Task
+                      {runningTimers[task.id] ? (
+                        <>
+                          <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          {formatTime(runningTimers[task.id].elapsed)}
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Start Timer
+                        </>
+                      )}
                     </button>
-                  )}
-                </div>
+                    {task.status !== 'COMPLETED' && totalTimeSpent > 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCompleteTask(task)
+                        }}
+                        className="flex-1 px-4 py-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center"
+                      >
+                        <div className="w-4 h-4 mr-2">
+                          <img src="/white-checkmark-24x24.svg" alt="Checkmark" className="w-full h-full"/>
+                        </div>
+                        Complete Task
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-3 text-sm text-gray-500">
+                    View only - not a member of this group
+                  </div>
+                )}
               </div>
             </div>
             )

@@ -48,7 +48,7 @@ export async function POST(
 
       // Check if user can access this group task
       const userInGroup = groupTask.group.users.some(ug => ug.userId === decoded.id)
-      if (decoded.userType === 'REGULAR_USER' && !userInGroup) {
+      if (!userInGroup) {
         throw new Error('Forbidden')
       }
 
@@ -57,6 +57,90 @@ export async function POST(
 
       switch (action) {
         case 'start':
+          console.log(`[DEBUG] Starting group task ${groupTaskId} for user ${decoded.id}`)
+          
+          // Find and pause any other running group task for this user
+          const otherRunningGroupTasks = await tx.groupTask.findMany({
+            where: {
+              status: 'IN_PROGRESS',
+              id: { not: groupTaskId },
+              group: {
+                users: {
+                  some: {
+                    userId: decoded.id
+                  }
+                }
+              }
+            }
+          })
+
+          console.log(`[DEBUG] Found ${otherRunningGroupTasks.length} other running group tasks for user ${decoded.id}`)
+
+          // Pause all other running group tasks
+          for (const runningGroupTask of otherRunningGroupTasks) {
+            console.log(`[DEBUG] Pausing group task ${runningGroupTask.id} (${runningGroupTask.title})`)
+            await tx.groupTask.update({
+              where: { id: runningGroupTask.id },
+              data: { 
+                status: 'PAUSED',
+                timeSum: runningGroupTask.timeSum + (timeSpent || 0)
+              }
+            })
+
+            // Log the pause action for other group tasks
+            try {
+              await tx.taskLog.create({
+                data: {
+                  userId: decoded.id,
+                  groupTaskId: runningGroupTask.id,
+                  taskType: 'GROUP_TASK',
+                  logType: 'PAUSED_TIMER',
+                  details: `Auto-paused when starting group task: ${groupTask.title}`
+                }
+              })
+            } catch (logError) {
+              console.warn('Failed to create task log for auto-pause:', logError)
+            }
+          }
+
+          // Also pause any running regular/admin tasks for this user
+          const runningRegularTasks = await tx.task.findMany({
+            where: {
+              assignedUserId: decoded.id,
+              status: 'IN_PROGRESS'
+            }
+          })
+
+          console.log(`[DEBUG] Found ${runningRegularTasks.length} running regular tasks for user ${decoded.id}`)
+
+          // Pause all running regular/admin tasks
+          for (const runningTask of runningRegularTasks) {
+            console.log(`[DEBUG] Pausing regular task ${runningTask.id} (${runningTask.title})`)
+            await tx.task.update({
+              where: { id: runningTask.id },
+              data: { 
+                status: 'PAUSED',
+                timeSum: runningTask.timeSum + (timeSpent || 0)
+              }
+            })
+
+            // Log the pause action for regular tasks
+            try {
+              await tx.taskLog.create({
+                data: {
+                  userId: decoded.id,
+                  taskId: runningTask.id,
+                  taskType: runningTask.type,
+                  logType: 'PAUSED_TIMER',
+                  details: `Auto-paused when starting group task: ${groupTask.title}`
+                }
+              })
+            } catch (logError) {
+              console.warn('Failed to create task log for auto-pause:', logError)
+            }
+          }
+
+          console.log(`[DEBUG] Starting group task ${groupTaskId} with status IN_PROGRESS`)
           updatedGroupTask = await tx.groupTask.update({
             where: { id: groupTaskId },
             data: { status: 'IN_PROGRESS' },

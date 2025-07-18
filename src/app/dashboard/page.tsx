@@ -32,6 +32,17 @@ export default function DashboardPage() {
     }
   }, [user, selectedDate])
 
+  // Listen for task status changes from other pages
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchTasks()
+      fetchGroupTasks()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [])
+
   const fetchTasks = async () => {
     try {
       const response = await fetch('/api/tasks')

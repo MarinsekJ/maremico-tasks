@@ -46,7 +46,15 @@ export async function GET(request: NextRequest) {
     const groupTasks = await prisma.groupTask.findMany({
       where: whereClause,
       include: {
-        group: true,
+        group: {
+          include: {
+            users: {
+              include: {
+                user: true
+              }
+            }
+          }
+        },
         timePerUser: {
           include: {
             user: true

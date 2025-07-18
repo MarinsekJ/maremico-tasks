@@ -265,14 +265,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           }),
         })
 
-              if (response.ok) {
-        setTimerRunning(false)
-        setStartTime(null)
-        setElapsedTime(0)
-        // Refresh task data and logs
-        await fetchTask(taskId)
-        await fetchTaskLogs(taskId)
-      }
+        if (response.ok) {
+          setTimerRunning(false)
+          setStartTime(null)
+          setElapsedTime(0)
+          // Refresh task data and logs
+          await fetchTask(taskId)
+          await fetchTaskLogs(taskId)
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+        }
       } else {
         // Start timer
         const response = await fetch(`/api/tasks/${taskId}/timer`, {
@@ -285,14 +287,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           }),
         })
 
-              if (response.ok) {
-        setTimerRunning(true)
-        setStartTime(Date.now())
-        setElapsedTime(0)
-        // Refresh task data and logs
-        await fetchTask(taskId)
-        await fetchTaskLogs(taskId)
-      }
+        if (response.ok) {
+          setTimerRunning(true)
+          setStartTime(Date.now())
+          setElapsedTime(0)
+          // Refresh task data and logs
+          await fetchTask(taskId)
+          await fetchTaskLogs(taskId)
+          // Trigger event for ActiveTaskCard to refresh
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+        }
       }
     } catch (error) {
       console.error('Error toggling timer:', error)
@@ -328,6 +332,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         // Refresh task data and logs
         await fetchTask(taskId)
         await fetchTaskLogs(taskId)
+        // Trigger event for ActiveTaskCard to refresh
+        window.dispatchEvent(new CustomEvent('taskStatusChanged'))
       }
     } catch (error) {
       console.error('Error completing task:', error)

@@ -16,6 +16,8 @@ import {
   Plus,
   User
 } from 'lucide-react'
+import ActiveTaskCard from './ActiveTaskCard'
+import DynamicTitle from './DynamicTitle'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -47,6 +49,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Dynamic Title Component */}
+      <DynamicTitle currentUserId={user?.id} />
+      
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
@@ -65,6 +70,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <X className="h-6 w-6" />
             </button>
           </div>
+          
+          {/* Active Task Card - Mobile */}
+          <div className="px-4 py-4 border-b border-gray-200">
+            <ActiveTaskCard currentUserId={user?.id} />
+          </div>
+          
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => (
               <Link
@@ -110,6 +121,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <span className="ml-2 text-xl font-bold text-gray-900">M Task</span>
           </div>
+          
+          {/* Active Task Card - Desktop */}
+          <div className="px-4 py-4 border-b border-gray-200">
+            <ActiveTaskCard currentUserId={user?.id} />
+          </div>
+          
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => (
               <Link
