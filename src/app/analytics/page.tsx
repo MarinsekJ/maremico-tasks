@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart3, Clock, CheckCircle, Users, TrendingUp, Calendar, X, User, Eye } from 'lucide-react'
+import { Clock, CheckCircle, Users, TrendingUp, Calendar, X, User, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -80,6 +80,7 @@ interface User {
   surname: string
   username: string
   userType: 'ADMIN' | 'REGULAR_USER'
+  isActive: boolean
 }
 
 export default function AnalyticsPage() {
@@ -93,77 +94,59 @@ export default function AnalyticsPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [selectedTask, setSelectedTask] = useState<Task | GroupTask | null>(null)
   const [showTaskModal, setShowTaskModal] = useState(false)
-  const [availableYears, setAvailableYears] = useState<number[]>([])
-  const [userCreatedYear, setUserCreatedYear] = useState<number>(new Date().getFullYear())
 
   const isAdmin = currentUser?.userType === 'ADMIN'
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        router.push(`/login?redirectTo=${encodeURIComponent('/analytics')}`)
-        return
-      }
-      
-      // Set default user filter to current user
-      setSelectedUserId(currentUser?.id || '')
-      
-      // If user is admin, fetch all users for filtering
-      if (isAdmin) {
-        fetchUsers()
-      }
-    }
-  }, [isAuthenticated, authLoading, currentUser, router, isAdmin])
-
-  // Fetch analytics when selectedUserId is set
-  useEffect(() => {
-    if (currentUser && selectedUserId !== undefined) {
-      fetchAnalytics()
-    }
-  }, [selectedUserId, currentUser, selectedMonth, selectedYear])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data)
+        setUsers(data.filter((user: User) => user.isActive))
       }
     } catch (error) {
       console.error('Error fetching users:', error)
     }
-  }
+  }, [])
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
-      // Build URL with user filter
-      let url = `/api/analytics?month=${selectedMonth}&year=${selectedYear}`
+      const params = new URLSearchParams({
+        month: selectedMonth.toString(),
+        year: selectedYear.toString(),
+        ...(selectedUserId && { userId: selectedUserId })
+      })
       
-      if (isAdmin && selectedUserId && selectedUserId !== currentUser?.id) {
-        url += `&userId=${selectedUserId}`
-      }
-      
-      const response = await fetch(url)
+      const response = await fetch(`/api/analytics?${params}`)
       if (response.ok) {
         const data = await response.json()
         setAnalytics(data)
-        
-        // Update available years from the response
-        if (data.availableYears) {
-          setAvailableYears(data.availableYears)
-        }
-        if (data.userCreatedYear) {
-          setUserCreatedYear(data.userCreatedYear)
-        }
       } else {
-        console.error('Analytics response not ok:', response.status, response.statusText)
+        console.error('Failed to fetch analytics')
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedMonth, selectedYear, selectedUserId])
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        router.push('/login')
+        return
+      }
+      
+      if (!isAdmin) {
+        router.push('/dashboard')
+        return
+      }
+      
+      fetchAnalytics()
+      fetchUsers()
+    }
+  }, [isAuthenticated, authLoading, isAdmin, router, fetchAnalytics, fetchUsers])
 
   const formatTime = (hours: number) => {
     const wholeHours = Math.floor(hours)
@@ -177,25 +160,6 @@ export default function AnalyticsPage() {
       'July', 'August', 'September', 'October', 'November', 'December'
     ]
     return months[month - 1]
-  }
-
-  const getAvailableYears = () => {
-    const currentYear = new Date().getFullYear()
-    const years: number[] = []
-    
-    // Start from user creation year
-    for (let year = userCreatedYear; year <= currentYear; year++) {
-      years.push(year)
-    }
-    
-    // Add years where user has tasks (from availableYears state)
-    availableYears.forEach(year => {
-      if (!years.includes(year)) {
-        years.push(year)
-      }
-    })
-    
-    return years.sort((a, b) => a - b)
   }
 
   const calculateTaskPercentage = (task: Task | GroupTask, taskType: 'admin' | 'regular' | 'group') => {
@@ -298,9 +262,8 @@ export default function AnalyticsPage() {
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 className="px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {getAvailableYears().map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
+                {/* The getAvailableYears function was removed, so this select will always show the current year */}
+                <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
               </select>
             </div>
           </div>

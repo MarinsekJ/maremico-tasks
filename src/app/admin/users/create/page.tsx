@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, User, Mail, Users, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, User, Mail, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface Group {
@@ -196,7 +196,15 @@ export default function CreateUserPage() {
     setLoading(true)
 
     try {
-      const { confirmPassword, ...userData } = formData
+      const userData = {
+        name: formData.name,
+        surname: formData.surname,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        userType: formData.userType,
+        groupIds: formData.groupIds
+      }
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: {

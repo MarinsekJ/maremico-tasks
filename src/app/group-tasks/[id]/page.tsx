@@ -68,43 +68,13 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
   const [timerStartTime, setTimerStartTime] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string; userType: string } | null>(null)
 
   // Form state
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [deadline, setDeadline] = useState('')
   const [status, setStatus] = useState<'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'>('WAITING')
-
-  useEffect(() => {
-    const initializePage = async () => {
-      // Fetch current user from API
-      try {
-        const response = await fetch('/api/auth/me')
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      }
-      
-      await fetchGroupTask()
-      await fetchLogs()
-    }
-    
-    initializePage()
-  }, [fetchGroupTask, fetchLogs])
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isTimerRunning && timerStartTime) {
-      interval = setInterval(() => {
-        setElapsedTime(Date.now() - timerStartTime)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [isTimerRunning, timerStartTime])
 
   const fetchGroupTask = useCallback(async () => {
     try {
@@ -140,6 +110,36 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
       console.error('Error fetching logs:', error)
     }
   }, [params])
+
+  useEffect(() => {
+    const initializePage = async () => {
+      // Fetch current user from API
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
+      }
+      
+      await fetchGroupTask()
+      await fetchLogs()
+    }
+    
+    initializePage()
+  }, [fetchGroupTask, fetchLogs])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isTimerRunning && timerStartTime) {
+      interval = setInterval(() => {
+        setElapsedTime(Date.now() - timerStartTime)
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isTimerRunning, timerStartTime])
 
   const handleSave = async () => {
     console.log('Save button clicked, sending data:', {
@@ -630,7 +630,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Group Task</h3>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete "{groupTask.title}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{groupTask.title}&quot;? This action cannot be undone.
               </p>
               <div className="flex justify-end space-x-3">
                 <button

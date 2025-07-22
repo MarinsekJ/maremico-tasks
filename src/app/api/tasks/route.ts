@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { TaskType } from '@/generated/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId')
     const type = searchParams.get('type')
 
-    let whereClause: any = {}
+    const whereClause: { assignedUserId?: string; type?: TaskType } = {}
 
     if (decoded.userType === 'REGULAR_USER') {
       // Regular users always see only their own tasks
@@ -31,8 +32,8 @@ export async function GET(request: NextRequest) {
       whereClause.assignedUserId = decoded.id
     }
 
-    if (type) {
-      whereClause.type = type
+    if (type === 'ADMIN_TASK' || type === 'REGULAR_TASK') {
+      whereClause.type = type as TaskType
     }
 
     const tasks = await prisma.task.findMany({
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to create task log:', logError)
     }
 
-    return NextResponse.json(task, { status: 201 })
+    return NextResponse.json(task)
   } catch (error) {
     console.error('Error creating task:', error)
     return NextResponse.json(

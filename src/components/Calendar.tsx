@@ -3,18 +3,12 @@
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { Eye } from 'lucide-react'
-
-interface Task {
-  id: string
-  title: string
-  deadline?: string
-  status: string
-}
+import type { TaskWithRelations } from '@/types'
 
 interface CalendarProps {
   selectedDate: Date
   onDateSelect: (date: Date) => void
-  tasks: Task[]
+  tasks: TaskWithRelations[]
 }
 
 export default function Calendar({ selectedDate, onDateSelect, tasks }: CalendarProps) {
@@ -26,7 +20,7 @@ export default function Calendar({ selectedDate, onDateSelect, tasks }: Calendar
   const getTasksForDate = (date: Date) => {
     return tasks.filter(task => {
       if (!task.deadline) return false
-      return isSameDay(new Date(task.deadline), date)
+      return isSameDay(task.deadline, date)
     })
   }
 

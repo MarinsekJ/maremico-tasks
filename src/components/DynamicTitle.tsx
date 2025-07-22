@@ -26,21 +26,6 @@ interface DynamicTitleProps {
 export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
   const [activeTask, setActiveTask] = useState<ActiveTask | null>(null)
 
-
-  useEffect(() => {
-    fetchActiveTask()
-  }, [currentUserId, fetchActiveTask])
-
-  // Listen for task status changes
-  useEffect(() => {
-    const handleTaskStatusChange = () => {
-      fetchActiveTask()
-    }
-
-    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
-    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [fetchActiveTask])
-
   const fetchActiveTask = useCallback(async () => {
     if (!currentUserId) {
       setActiveTask(null)
@@ -105,6 +90,20 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
     }
   }, [currentUserId])
 
+  useEffect(() => {
+    fetchActiveTask()
+  }, [currentUserId, fetchActiveTask])
+
+  // Listen for task status changes
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchActiveTask()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [fetchActiveTask])
+
   // Update page title based on active task
   useEffect(() => {
     if (activeTask) {
@@ -113,27 +112,8 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
       
       // Set the title
       document.title = fullTitle
-      
-      // Start sliding animation if title is long
-      if (fullTitle.length > 30) {
-        const slideTitle = () => {
-          setTitlePosition(prev => {
-            const newPos = prev - 1
-            if (newPos < -(fullTitle.length - 30)) {
-              return 0
-            }
-            return newPos
-          })
-        }
-        
-        const interval = setInterval(slideTitle, 200)
-        return () => clearInterval(interval)
-      } else {
-        setTitlePosition(0)
-      }
     } else {
       document.title = 'Maremico Task System'
-      setTitlePosition(0)
     }
   }, [activeTask])
 

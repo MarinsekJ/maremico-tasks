@@ -74,52 +74,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     assignedUserId: ''
   })
 
-  useEffect(() => {
-    const initializePage = async () => {
-      if (!authLoading) {
-        if (!isAuthenticated) {
-          const { id } = await params
-          router.push(`/login?redirectTo=${encodeURIComponent(`/tasks/${id}`)}`)
-          return
-        }
-        const { id } = await params
-        setTaskId(id)
-        await fetchTask(id)
-        await fetchTaskLogs(id)
-        await fetchUsers()
-      }
-    }
-    
-    initializePage()
-  }, [isAuthenticated, authLoading, router, params, fetchTask, fetchTaskLogs, fetchUsers])
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (showDeleteModal) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showDeleteModal])
-
-  // Prevent scroll jumping on mobile
-  useEffect(() => {
-    const handleScroll = () => {
-      // Prevent any automatic scroll restoration
-      if (window.scrollY === 0 && document.body.scrollTop === 0) {
-        // Don't do anything if we're already at the top
-        return
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
   const fetchTask = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/tasks/${id}`)
@@ -165,6 +119,52 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error fetching task logs:', error)
     }
+  }, [])
+
+  useEffect(() => {
+    const initializePage = async () => {
+      if (!authLoading) {
+        if (!isAuthenticated) {
+          const { id } = await params
+          router.push(`/login?redirectTo=${encodeURIComponent(`/tasks/${id}`)}`)
+          return
+        }
+        const { id } = await params
+        setTaskId(id)
+        await fetchTask(id)
+        await fetchTaskLogs(id)
+        await fetchUsers()
+      }
+    }
+    
+    initializePage()
+  }, [isAuthenticated, authLoading, router, params, fetchTask, fetchTaskLogs, fetchUsers])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showDeleteModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showDeleteModal])
+
+  // Prevent scroll jumping on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      // Prevent any automatic scroll restoration
+      if (window.scrollY === 0 && document.body.scrollTop === 0) {
+        // Don't do anything if we're already at the top
+        return
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   const getStatusColor = (status: string) => {
@@ -485,7 +485,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Task not found</h3>
-          <p className="text-gray-600 mb-4">The task you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The task you&apos;re looking for doesn&apos;t exist.</p>
           <button
             onClick={() => router.push('/tasks')}
             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -825,7 +825,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
               <div className="mb-6">
                 <p className="text-sm text-gray-700">
-                  Are you sure you want to delete the task "<strong>{task?.title}</strong>"? 
+                  Are you sure you want to delete the task &quot;<strong>{task?.title}</strong>&quot;? 
                   This will permanently remove the task and all associated data.
                 </p>
               </div>

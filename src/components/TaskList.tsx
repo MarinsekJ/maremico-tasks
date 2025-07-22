@@ -5,34 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Clock, Play, Pause, CheckCircle, AlertCircle } from 'lucide-react'
 import TaskTimer from './TaskTimer'
 import { formatDate, isTaskOverdue, forceMobileNavigation } from '@/lib/utils'
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  deadline?: string
-  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'
-  timeSum: number
-  type: 'ADMIN_TASK' | 'REGULAR_TASK'
-  assignedUser?: {
-    id: string
-    name: string
-    surname: string
-  }
-  creator: {
-    name: string
-    surname: string
-  }
-}
+import type { TaskWithRelations } from '@/types'
 
 interface TaskListProps {
-  tasks: Task[]
+  tasks: TaskWithRelations[]
   loading: boolean
   onTaskUpdate: () => void
-  currentUserId?: string
 }
 
-export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }: TaskListProps) {
+export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps) {
   const router = useRouter()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
 
@@ -115,7 +96,8 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
   return (
     <div className="space-y-4">
       {tasks.map((task) => {
-        const overdue = isTaskOverdue(task.deadline)
+        const deadlineString = task.deadline instanceof Date ? task.deadline.toISOString() : task.deadline
+        const overdue = deadlineString ? isTaskOverdue(deadlineString) : false
         
         return (
           <div
@@ -195,14 +177,14 @@ export default function TaskList({ tasks, loading, onTaskUpdate, currentUserId }
                     isActive={activeTaskId === task.id}
                     onStatusChange={(newStatus) => {
                       if (newStatus === 'IN_PROGRESS') {
+                        // Clear any other active task since only one can be active at a time
                         setActiveTaskId(task.id)
                       } else {
                         setActiveTaskId(null)
                       }
+                      // Refresh the task list to reflect the changes
                       onTaskUpdate()
                     }}
-                    assignedUserId={task.assignedUser?.id}
-                    currentUserId={currentUserId}
                   />
                 </div>
               </div>

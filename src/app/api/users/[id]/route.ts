@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken, hashPassword } from '@/lib/auth'
+import { UserType } from '@/generated/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -75,8 +76,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { name, surname, username, email, password, userType, isActive, groupIds } = body
+    const {
+      name,
+      surname,
+      username,
+      email,
+      password,
+      userType,
+      isActive,
+      groupIds
+    } = await request.json()
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -116,16 +125,24 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: {
+      name?: string
+      surname?: string
+      username?: string
+      email?: string
+      password?: string
+      userType?: UserType
+      isActive?: boolean
+    } = {}
     if (name) updateData.name = name
     if (surname) updateData.surname = surname
     if (username) updateData.username = username
     if (email) updateData.email = email
     if (password) updateData.password = await hashPassword(password)
-    if (userType) updateData.userType = userType
+    if (userType === 'ADMIN' || userType === 'REGULAR_USER') updateData.userType = userType as UserType
     if (typeof isActive === 'boolean') updateData.isActive = isActive
 
-    const user = await prisma.user.update({
+    await prisma.user.update({
       where: { id },
       data: updateData
     })

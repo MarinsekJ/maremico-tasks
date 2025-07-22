@@ -28,20 +28,6 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
   const [activeTask, setActiveTask] = useState<ActiveTask | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchActiveTask()
-  }, [currentUserId, fetchActiveTask])
-
-  // Listen for task status changes
-  useEffect(() => {
-    const handleTaskStatusChange = () => {
-      fetchActiveTask()
-    }
-
-    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
-    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [fetchActiveTask])
-
   const fetchActiveTask = useCallback(async () => {
     if (!currentUserId) {
       setLoading(false)
@@ -109,7 +95,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
           isRunning,
           isMember,
           currentUserId,
-          groupUsers: task.group?.users?.map((u) => ({ userId: u.userId, username: u.user?.username }))
+          groupUsers: task.group?.users?.map((u: { userId: string; user?: { username: string } }) => ({ userId: u.userId, username: u.user?.username }))
         })
         return isRunning && isMember
       })
@@ -118,7 +104,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
         id: runningGroupTask.id,
         title: runningGroupTask.title,
         groupId: runningGroupTask.groupId,
-        groupUsers: runningGroupTask.group?.users?.map((u) => ({ userId: u.userId, username: u.user?.username }))
+        groupUsers: runningGroupTask.group?.users?.map((u: { userId: string; user?: { username: string } }) => ({ userId: u.userId, username: u.user?.username }))
       } : null)
 
       if (runningGroupTask) {
@@ -141,6 +127,20 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       setLoading(false)
     }
   }, [currentUserId])
+
+  useEffect(() => {
+    fetchActiveTask()
+  }, [currentUserId, fetchActiveTask])
+
+  // Listen for task status changes
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchActiveTask()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [fetchActiveTask])
 
   const handlePause = async () => {
     if (!activeTask) return

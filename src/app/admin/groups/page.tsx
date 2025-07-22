@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit, Trash2, Users, Palette, Calendar } from 'lucide-react'
+import { Plus, Edit, Trash2, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDate } from '@/lib/utils'
 import DashboardLayout from '@/components/DashboardLayout'

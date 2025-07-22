@@ -5,13 +5,19 @@ import { useRouter } from 'next/navigation'
 import { Plus, Clock, Calendar, Users, Filter, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
-import { formatDate, isTaskOverdue, sortTasksByDeadline } from '@/lib/utils'
+import { formatDate, isTaskOverdue } from '@/lib/utils'
 
 interface Group {
   id: string
   name: string
   description?: string
   color: string
+  users?: Array<{
+    userId: string
+    user?: {
+      username: string
+    }
+  }>
 }
 
 interface GroupTask {
@@ -26,6 +32,12 @@ interface GroupTask {
     name: string
     description?: string
     color: string
+    users?: Array<{
+      userId: string
+      user?: {
+        username: string
+      }
+    }>
   }
   timePerUser: {
     userId: string
@@ -54,20 +66,13 @@ export default function GroupTasksPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
-        router.push(`/login?redirectTo=${encodeURIComponent('/group-tasks')}`)
+        router.push('/login')
         return
       }
       
       fetchGroups()
     }
   }, [isAuthenticated, authLoading, user, router])
-
-  // Fetch group tasks when selectedGroupId is set
-  useEffect(() => {
-    if (user) {
-      fetchGroupTasks()
-    }
-  }, [selectedGroupId, user, fetchGroupTasks])
 
   const fetchGroups = async () => {
     try {
@@ -101,6 +106,13 @@ export default function GroupTasksPage() {
       setLoading(false)
     }
   }, [selectedGroupId])
+
+  // Fetch group tasks when selectedGroupId is set
+  useEffect(() => {
+    if (user) {
+      fetchGroupTasks()
+    }
+  }, [selectedGroupId, user, fetchGroupTasks])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -243,7 +255,21 @@ export default function GroupTasksPage() {
     }
   }
 
-  const filteredGroupTasks = sortTasksByDeadline(
+  const sortGroupTasksByDeadline = (tasks: GroupTask[]): GroupTask[] => {
+    return tasks.sort((a, b) => {
+      // Tasks with no deadline go to the end
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      
+      // Sort by deadline (earliest first)
+      const dateA = new Date(a.deadline)
+      const dateB = new Date(b.deadline)
+      return dateA.getTime() - dateB.getTime()
+    })
+  }
+
+  const filteredGroupTasks = sortGroupTasksByDeadline(
     groupTasks.filter(task => {
       const matchesFilter = filter === 'all' ? task.status !== 'COMPLETED' : task.status === filter
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

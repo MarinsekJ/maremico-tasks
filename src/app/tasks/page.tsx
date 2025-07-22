@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Clock, Calendar, User, Filter, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
-import { formatDate, isTaskOverdue, sortTasksByDeadline } from '@/lib/utils'
+import { formatDate, isTaskOverdue } from '@/lib/utils'
 
 interface User {
   id: string
@@ -50,42 +50,7 @@ export default function TasksPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [runningTimers, setRunningTimers] = useState<{ [key: string]: { startTime: number; elapsed: number } }>({})
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        router.push(`/login?redirectTo=${encodeURIComponent('/tasks')}`)
-        return
-      }
-      
-      // Set default user filter to current user
-      setSelectedUserId(user?.id || '')
-      
-      // If user is admin, fetch all users for filtering
-      if (user?.userType === 'ADMIN') {
-        fetchUsers()
-      }
-    }
-  }, [isAuthenticated, authLoading, user, router])
-
-  // Fetch tasks when selectedUserId is set
-  useEffect(() => {
-    if (user && selectedUserId !== undefined) {
-      fetchTasks()
-    }
-  }, [selectedUserId, user, fetchTasks])
-
-  // Listen for task status changes from other pages
-  useEffect(() => {
-    const handleTaskStatusChange = () => {
-      fetchTasks()
-    }
-
-    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
-    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [fetchTasks])
-
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       if (response.ok) {
@@ -95,7 +60,7 @@ export default function TasksPage() {
     } catch (error) {
       console.error('Error fetching users:', error)
     }
-  }
+  }, [])
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -125,6 +90,41 @@ export default function TasksPage() {
       setLoading(false)
     }
   }, [user, selectedUserId])
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        router.push(`/login?redirectTo=${encodeURIComponent('/tasks')}`)
+        return
+      }
+      
+      // Set default user filter to current user
+      setSelectedUserId(user?.id || '')
+      
+      // If user is admin, fetch all users for filtering
+      if (user?.userType === 'ADMIN') {
+        fetchUsers()
+      }
+    }
+  }, [isAuthenticated, authLoading, user, router, fetchUsers])
+
+  // Fetch tasks when selectedUserId is set
+  useEffect(() => {
+    if (user && selectedUserId !== undefined) {
+      fetchTasks()
+    }
+  }, [selectedUserId, user, fetchTasks])
+
+  // Listen for task status changes from other pages
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchTasks()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [fetchTasks])
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -261,7 +261,21 @@ export default function TasksPage() {
     }
   }
 
-  const filteredTasks = sortTasksByDeadline(
+  const sortTasksByDeadlineString = (tasks: Task[]): Task[] => {
+    return tasks.sort((a, b) => {
+      // Tasks with no deadline go to the end
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      
+      // Sort by deadline (earliest first)
+      const dateA = new Date(a.deadline)
+      const dateB = new Date(b.deadline)
+      return dateA.getTime() - dateB.getTime()
+    })
+  }
+
+  const filteredTasks = sortTasksByDeadlineString(
     tasks.filter(task => {
       const matchesFilter = filter === 'all' ? task.status !== 'COMPLETED' : task.status === filter
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

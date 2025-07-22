@@ -17,7 +17,7 @@ export function isTaskOverdue(deadline?: string): boolean {
   return isBefore(deadlineDate, now)
 }
 
-export function sortTasksByDeadline(tasks: Array<{ deadline?: string }>): Array<{ deadline?: string }> {
+export function sortTasksByDeadline<T extends { deadline?: Date | null }>(tasks: T[]): T[] {
   return tasks.sort((a, b) => {
     // Tasks with no deadline go to the end
     if (!a.deadline && !b.deadline) return 0
@@ -25,8 +25,8 @@ export function sortTasksByDeadline(tasks: Array<{ deadline?: string }>): Array<
     if (!b.deadline) return -1
     
     // Sort by deadline (earliest first)
-    const dateA = parseISO(a.deadline)
-    const dateB = parseISO(b.deadline)
+    const dateA = a.deadline instanceof Date ? a.deadline : new Date(a.deadline)
+    const dateB = b.deadline instanceof Date ? b.deadline : new Date(b.deadline)
     return dateA.getTime() - dateB.getTime()
   })
 }

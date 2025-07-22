@@ -96,12 +96,12 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: { name?: string; description?: string | null; color?: string } = {}
     if (name) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (color) updateData.color = color
 
-    const group = await prisma.group.update({
+    await prisma.group.update({
       where: { id },
       data: updateData,
       include: {

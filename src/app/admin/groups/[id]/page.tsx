@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Palette } from 'lucide-react'
+import { ArrowLeft, Save } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -16,27 +16,12 @@ interface User {
   isActive: boolean
 }
 
-interface Group {
-  id: string
-  name: string
-  description: string | null
-  color: string
-  users: {
-    user: {
-      id: string
-      name: string
-      surname: string
-      username: string
-    }
-  }[]
-}
-
 export default function EditGroupPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [group, setGroup] = useState<Group | null>(null)
+
   const [users, setUsers] = useState<User[]>([])
   const [formData, setFormData] = useState({
     name: '',
@@ -55,6 +40,42 @@ export default function EditGroupPage({ params }: { params: Promise<{ id: string
     getParams()
   }, [params])
 
+  const fetchGroup = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Fetched group data:', data) // Debug log
+        setFormData({
+          name: data.name,
+          description: data.description || '',
+          color: data.color,
+          userIds: data.users.map((u: { user: { id: string } }) => u.user.id)
+        })
+      } else {
+        console.error('Failed to fetch group:', response.status)
+        router.push('/admin/groups')
+      }
+    } catch (error) {
+      console.error('Error fetching group:', error)
+      router.push('/admin/groups')
+    } finally {
+      setLoading(false)
+    }
+  }, [groupId, router])
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.filter((user: User) => user.isActive))
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }, [])
+
   useEffect(() => {
     if (!authLoading && groupId) {
       if (!isAuthenticated) {
@@ -70,44 +91,7 @@ export default function EditGroupPage({ params }: { params: Promise<{ id: string
       fetchGroup()
       fetchUsers()
     }
-  }, [isAuthenticated, authLoading, user, router, groupId])
-
-  const fetchGroup = async () => {
-    try {
-      const response = await fetch(`/api/groups/${groupId}`)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Fetched group data:', data) // Debug log
-        setGroup(data)
-        setFormData({
-          name: data.name,
-          description: data.description || '',
-          color: data.color,
-          userIds: data.users.map((u: any) => u.user.id)
-        })
-      } else {
-        console.error('Failed to fetch group:', response.status)
-        router.push('/admin/groups')
-      }
-    } catch (error) {
-      console.error('Error fetching group:', error)
-      router.push('/admin/groups')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/users')
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.filter((user: User) => user.isActive))
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error)
-    }
-  }
+  }, [isAuthenticated, authLoading, user, router, groupId, fetchGroup, fetchUsers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

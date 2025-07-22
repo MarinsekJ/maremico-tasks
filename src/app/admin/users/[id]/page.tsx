@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, User, Mail, Eye, EyeOff, Save, X } from 'lucide-react'
+import { ArrowLeft, User, Mail, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
 import { formatDate } from '@/lib/utils'
@@ -63,6 +63,60 @@ export default function EditUserPage() {
   const isAdmin = currentUser?.userType === 'ADMIN'
   const isOwnProfile = currentUser?.id === userId
 
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/users/${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserData(data)
+        setFormData({
+          name: data.name,
+          surname: data.surname,
+          username: data.username,
+          email: data.email,
+          password: '',
+          confirmPassword: '',
+          userType: data.userType,
+          isActive: data.isActive,
+          groupIds: data.groups.map((group: { id: string }) => group.id)
+        })
+      } else {
+        console.error('Failed to fetch user:', response.status)
+        router.push('/admin/users')
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error)
+      router.push('/admin/users')
+    } finally {
+      setLoading(false)
+    }
+  }, [userId, router])
+
+  const fetchGroups = useCallback(async () => {
+    try {
+      const response = await fetch('/api/groups')
+      if (response.ok) {
+        const data = await response.json()
+        setGroups(data)
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error)
+    }
+  }, [])
+
+  const validatePasswords = useCallback(() => {
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return false
+    }
+    if (formData.password && formData.password.length < 6) {
+      setPasswordError('Password must be at least 6 characters long')
+      return false
+    }
+    setPasswordError('')
+    return true
+  }, [formData.password, formData.confirmPassword])
+
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
@@ -79,47 +133,7 @@ export default function EditUserPage() {
       fetchUserData()
       fetchGroups()
     }
-  }, [isAuthenticated, authLoading, currentUser, router, userId, isAdmin, isOwnProfile])
-
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch(`/api/users/${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setUserData(data)
-        setFormData({
-          name: data.name,
-          surname: data.surname,
-          username: data.username,
-          email: data.email,
-          password: '',
-          confirmPassword: '',
-          userType: data.userType,
-          isActive: data.isActive,
-          groupIds: data.groups.map((group: any) => group.id)
-        })
-      } else {
-        router.push('/admin/users')
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error)
-      router.push('/admin/users')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchGroups = async () => {
-    try {
-      const response = await fetch('/api/groups')
-      if (response.ok) {
-        const data = await response.json()
-        setGroups(data)
-      }
-    } catch (error) {
-      console.error('Error fetching groups:', error)
-    }
-  }
+  }, [isAuthenticated, authLoading, currentUser, router, userId, isAdmin, isOwnProfile, fetchUserData, fetchGroups])
 
   const checkUsernameUniqueness = async (username: string, currentUsername?: string) => {
     if (!username || username.length < 3) {
@@ -158,14 +172,6 @@ export default function EditUserPage() {
     }
   }
 
-  const validatePasswords = () => {
-    if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
-      setPasswordError('Passwords do not match')
-    } else {
-      setPasswordError('')
-    }
-  }
-
   // Check username uniqueness when username changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -178,7 +184,7 @@ export default function EditUserPage() {
   // Validate passwords when either password field changes
   useEffect(() => {
     validatePasswords()
-  }, [formData.password, formData.confirmPassword])
+  }, [formData.password, formData.confirmPassword, validatePasswords])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -197,7 +203,16 @@ export default function EditUserPage() {
     setSaving(true)
 
     try {
-      const updateData: any = {
+      const updateData: {
+        name: string;
+        surname: string;
+        username: string;
+        email: string;
+        userType: 'ADMIN' | 'REGULAR_USER';
+        isActive: boolean;
+        groupIds: string[];
+        password?: string;
+      } = {
         name: formData.name,
         surname: formData.surname,
         username: formData.username,

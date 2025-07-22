@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const groupId = searchParams.get('groupId')
 
-    let whereClause: any = {}
+    const whereClause: { groupId?: string | { in: string[] } } = {}
 
     if (decoded.userType === 'REGULAR_USER') {
       // Get user's groups

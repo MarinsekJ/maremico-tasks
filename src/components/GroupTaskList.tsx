@@ -43,7 +43,7 @@ interface GroupTaskListProps {
 export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTaskListProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
 
   // Fetch current user
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
 
   // Filter tasks to only show those where the user is a member
   const userTasks = user ? tasks.filter(task => 
-    task.group?.users?.some((groupUser: any) => groupUser.userId === user.id)
+    task.group?.users?.some((groupUser: { userId: string }) => groupUser.userId === user.id)
   ) : []
 
   const filteredTasks = selectedGroup === 'all'
@@ -248,7 +248,6 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
                 <GroupTaskTimer
                   taskId={task.id}
                   status={task.status}
-                  timeSum={task.timeSum}
                   isActive={activeTaskId === task.id}
                   onStatusChange={(newStatus) => {
                     if (newStatus === 'IN_PROGRESS') {

@@ -104,7 +104,7 @@ export async function PATCH(
     const { title, description, deadline, status } = await request.json()
 
     // Only admins can change status
-    let updateData: any = {}
+    const updateData: { title?: string; description?: string; deadline?: Date | null; status?: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED' } = {}
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
     if (deadline !== undefined) {

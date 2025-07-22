@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit, Trash2, User, Mail, Users as UsersIcon } from 'lucide-react'
+import { Plus, Edit, Trash2, User, Users as UsersIcon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDate } from '@/lib/utils'
 import DashboardLayout from '@/components/DashboardLayout'

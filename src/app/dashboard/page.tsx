@@ -1,21 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
 import TaskList from '@/components/TaskList'
 import GroupTaskList from '@/components/GroupTaskList'
 import Calendar from '@/components/Calendar'
-import { format, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
+import { format } from 'date-fns'
 import { formatDate, isTaskOverdue, sortTasksByDeadline } from '@/lib/utils'
-import { ArrowRight } from 'lucide-react'
+import type { TaskWithRelations } from '@/types'
+
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [tasks, setTasks] = useState([])
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [groupTasks, setGroupTasks] = useState([])
   const [loadingTasks, setLoadingTasks] = useState(true)
 
@@ -25,25 +26,7 @@ export default function DashboardPage() {
     }
   }, [user, loading, router])
 
-  useEffect(() => {
-    if (user) {
-      fetchTasks()
-      fetchGroupTasks()
-    }
-  }, [user, selectedDate])
-
-  // Listen for task status changes from other pages
-  useEffect(() => {
-    const handleTaskStatusChange = () => {
-      fetchTasks()
-      fetchGroupTasks()
-    }
-
-    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
-    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [])
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const response = await fetch('/api/tasks')
       if (response.ok) {
@@ -55,9 +38,9 @@ export default function DashboardPage() {
     } finally {
       setLoadingTasks(false)
     }
-  }
+  }, [])
 
-  const fetchGroupTasks = async () => {
+  const fetchGroupTasks = useCallback(async () => {
     try {
       const response = await fetch('/api/group-tasks')
       if (response.ok) {
@@ -67,25 +50,34 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching group tasks:', error)
     }
-  }
+  }, [])
 
-  const getTasksForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return tasks.filter((task: any) => {
-      if (!task.deadline) return false
-      const taskDate = format(new Date(task.deadline), 'yyyy-MM-dd')
-      return taskDate === dateStr
-    })
-  }
+  useEffect(() => {
+    if (user) {
+      fetchTasks()
+      fetchGroupTasks()
+    }
+  }, [user, selectedDate, fetchTasks, fetchGroupTasks])
 
-  const getTodayTasks = () => {
+  // Listen for task status changes from other pages
+  useEffect(() => {
+    const handleTaskStatusChange = () => {
+      fetchTasks()
+      fetchGroupTasks()
+    }
+
+    window.addEventListener('taskStatusChanged', handleTaskStatusChange)
+    return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
+  }, [fetchTasks, fetchGroupTasks])
+
+  const getTodayTasks = (): TaskWithRelations[] => {
     const today = new Date()
     const todayStr = format(today, 'yyyy-MM-dd')
     
     console.log('Today\'s date string:', todayStr)
     console.log('All tasks:', tasks)
     
-    const todayTasks = tasks.filter((task: any) => {
+    const todayTasks = tasks.filter((task: TaskWithRelations) => {
       if (!task.deadline) return false
       if (task.status === 'COMPLETED') return false // Filter out completed tasks
       const taskDate = format(new Date(task.deadline), 'yyyy-MM-dd')
@@ -97,14 +89,16 @@ export default function DashboardPage() {
     return todayTasks
   }
 
-  const getOverdueTasks = () => {
-    return tasks.filter((task: any) => 
-      isTaskOverdue(task.deadline) && task.status !== 'COMPLETED'
-    )
+  const getOverdueTasks = (): TaskWithRelations[] => {
+    return tasks.filter((task: TaskWithRelations) => {
+      if (!task.deadline) return false
+      const deadlineString = task.deadline instanceof Date ? task.deadline.toISOString() : task.deadline
+      return isTaskOverdue(deadlineString) && task.status !== 'COMPLETED'
+    })
   }
 
-  const getUndatedTasks = () => {
-    return tasks.filter((task: any) => !task.deadline && task.status !== 'COMPLETED')
+  const getUndatedTasks = (): TaskWithRelations[] => {
+    return tasks.filter((task: TaskWithRelations) => !task.deadline && task.status !== 'COMPLETED')
   }
 
   if (loading || !user) {
@@ -125,7 +119,7 @@ export default function DashboardPage() {
               Welcome back, {user.name}!
             </h1>
             <p className="text-gray-600 mt-1">
-              Here's what's on your plate today
+              Here&apos;s what&apos;s on your plate today
             </p>
           </div>
           <div className="text-left sm:text-right">
@@ -155,7 +149,6 @@ export default function DashboardPage() {
                   tasks={sortTasksByDeadline(getOverdueTasks())} 
                   loading={loadingTasks}
                   onTaskUpdate={fetchTasks}
-                  currentUserId={user.id}
                 />
               </div>
             )}
@@ -164,7 +157,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Today's Tasks
+                  Today&apos;s Tasks
                 </h2>
                 <div className="text-left sm:text-right">
                   <p className="text-sm text-gray-500">
@@ -179,7 +172,6 @@ export default function DashboardPage() {
                 tasks={sortTasksByDeadline(getTodayTasks())} 
                 loading={loadingTasks}
                 onTaskUpdate={fetchTasks}
-                currentUserId={user.id}
               />
             </div>
 
@@ -200,7 +192,6 @@ export default function DashboardPage() {
                   tasks={sortTasksByDeadline(getUndatedTasks())} 
                   loading={loadingTasks}
                   onTaskUpdate={fetchTasks}
-                  currentUserId={user.id}
                 />
               </div>
             )}
