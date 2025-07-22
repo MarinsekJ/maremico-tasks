@@ -144,7 +144,7 @@ export async function PATCH(
         })
 
         const existingGroupIds = existingGroups.map(group => group.id)
-        const invalidGroupIds = groupIds.filter(id => !existingGroupIds.includes(id))
+        const invalidGroupIds = groupIds.filter((id: string) => !existingGroupIds.includes(id))
 
         if (invalidGroupIds.length > 0) {
           return NextResponse.json(

@@ -108,8 +108,8 @@ export async function GET(request: NextRequest) {
     const availableYears = Array.from(taskYears).sort((a, b) => a - b)
     
     // Calculate analytics
-    const adminTasks = completedTasks.filter(task => task.type === 'ADMIN_TASK')
-    const regularTasks = completedTasks.filter(task => task.type === 'REGULAR_TASK')
+    const adminTasks = completedTasks.filter((task: any) => task.type === 'ADMIN_TASK')
+    const regularTasks = completedTasks.filter((task: any) => task.type === 'REGULAR_TASK')
     
     const totalAdminTime = adminTasks.reduce((sum, task) => sum + task.timeSum, 0)
     const totalRegularTime = regularTasks.reduce((sum, task) => sum + task.timeSum, 0)
