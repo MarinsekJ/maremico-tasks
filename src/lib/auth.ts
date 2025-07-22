@@ -4,6 +4,12 @@ import { User } from '../generated/prisma'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
+export interface JwtPayload {
+  id: string;
+  email: string;
+  userType: 'ADMIN' | 'REGULAR_USER';
+}
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
 }
@@ -24,10 +30,10 @@ export function generateToken(user: User): string {
   )
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET)
-  } catch (error) {
+    return jwt.verify(token, JWT_SECRET) as JwtPayload
+  } catch {
     return null
   }
 } 

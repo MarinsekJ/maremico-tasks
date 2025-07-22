@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -94,7 +94,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
     }
     
     initializePage()
-  }, [])
+  }, [fetchGroupTask, fetchLogs])
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -106,7 +106,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
     return () => clearInterval(interval)
   }, [isTimerRunning, timerStartTime])
 
-  const fetchGroupTask = async () => {
+  const fetchGroupTask = useCallback(async () => {
     try {
       const { id } = await params
       const response = await fetch(`/api/group-tasks/${id}`)
@@ -126,9 +126,9 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [params])
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const { id } = await params
       const response = await fetch(`/api/group-tasks/${id}/logs`)
@@ -139,7 +139,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
     } catch (error) {
       console.error('Error fetching logs:', error)
     }
-  }
+  }, [params])
 
   const handleSave = async () => {
     console.log('Save button clicked, sending data:', {

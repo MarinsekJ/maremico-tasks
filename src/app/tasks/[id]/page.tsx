@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, Calendar, User, Edit, Play, Trash2, Save, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
-import { formatDate, formatDateTime, isTaskOverdue } from '@/lib/utils'
+import { formatDateTime, isTaskOverdue } from '@/lib/utils'
 
 interface Task {
   id: string
@@ -91,7 +91,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
     
     initializePage()
-  }, [isAuthenticated, authLoading, router, params])
+  }, [isAuthenticated, authLoading, router, params, fetchTask, fetchTaskLogs, fetchUsers])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const fetchTask = async (id: string) => {
+  const fetchTask = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/tasks/${id}`)
       if (response.ok) {
@@ -141,9 +141,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       if (response.ok) {
@@ -153,9 +153,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error fetching users:', error)
     }
-  }
+  }, [])
 
-  const fetchTaskLogs = async (id: string) => {
+  const fetchTaskLogs = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/tasks/${id}/logs`)
       if (response.ok) {
@@ -165,7 +165,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error fetching task logs:', error)
     }
-  }
+  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {

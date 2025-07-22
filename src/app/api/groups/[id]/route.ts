@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken, JwtPayload } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(token) as JwtPayload | null
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -59,7 +59,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(token) as JwtPayload | null
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -184,7 +184,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(token) as JwtPayload | null
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

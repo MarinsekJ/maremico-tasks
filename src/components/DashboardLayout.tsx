@@ -9,12 +9,10 @@ import {
   Users, 
   FolderOpen, 
   BarChart3, 
-  Settings, 
   LogOut, 
   Menu, 
   X,
-  Plus,
-  User
+  Plus
 } from 'lucide-react'
 import ActiveTaskCard from './ActiveTaskCard'
 import DynamicTitle from './DynamicTitle'

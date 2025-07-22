@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, User, Mail, Calendar, Shield, Users, Clock, Edit } from 'lucide-react'
+import { ArrowLeft, Calendar, Shield, Users, Edit } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/DashboardLayout'
 import { formatDate } from '@/lib/utils'
@@ -65,7 +65,7 @@ export default function ProfilePage() {
         // Transform the data to match the expected interface
         setUserData({
           ...data,
-          groups: data.groups.map((group: any) => ({
+          groups: data.groups.map((group: { id: string }) => ({
             id: group.id,
             group: group
           }))
@@ -90,14 +90,14 @@ export default function ProfilePage() {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
         
         // Filter tasks for current month
-        const currentMonthTasks = tasks.filter((task: any) => {
+        const currentMonthTasks = tasks.filter((task: { createdAt: string }) => {
           const taskDate = new Date(task.createdAt)
           return taskDate >= startOfMonth && taskDate <= endOfMonth
         })
         
         // Count assigned and completed tasks
         const totalAssigned = currentMonthTasks.length
-        const totalCompleted = currentMonthTasks.filter((task: any) => task.status === 'COMPLETED').length
+        const totalCompleted = currentMonthTasks.filter((task: { status: string }) => task.status === 'COMPLETED').length
         
         setTaskStats({ totalAssigned, totalCompleted })
       }

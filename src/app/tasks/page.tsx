@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Clock, Calendar, User, Filter, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -72,7 +72,7 @@ export default function TasksPage() {
     if (user && selectedUserId !== undefined) {
       fetchTasks()
     }
-  }, [selectedUserId, user])
+  }, [selectedUserId, user, fetchTasks])
 
   // Listen for task status changes from other pages
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function TasksPage() {
 
     window.addEventListener('taskStatusChanged', handleTaskStatusChange)
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [])
+  }, [fetchTasks])
 
 
   const fetchUsers = async () => {
@@ -97,7 +97,7 @@ export default function TasksPage() {
     }
   }
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       // Build URL with user filter
       let url = '/api/tasks'
@@ -124,7 +124,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, selectedUserId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -205,7 +205,7 @@ export default function TasksPage() {
 
         if (response.ok) {
           // Clear any other running timers since only one task can be active at a time
-          setRunningTimers(prev => {
+          setRunningTimers(() => {
             const updated: { [key: string]: { startTime: number; elapsed: number } } = {}
             // Only keep the new task as running
             updated[task.id] = { startTime: Date.now(), elapsed: 0 }

@@ -71,19 +71,7 @@ export default function CreateTaskPage() {
     }
   }
 
-  // Convert ISO date (yyyy-mm-dd) to display format (dd.mm.yyyy)
-  const formatDateForDisplay = (isoDate: string): string => {
-    if (!isoDate) return ''
-    const date = new Date(isoDate)
-    return formatDate(date)
-  }
 
-  // Convert display format (dd.mm.yyyy) to ISO format (yyyy-mm-dd)
-  const formatDateForInput = (displayDate: string): string => {
-    if (!displayDate) return ''
-    const [day, month, year] = displayDate.split('.')
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-  }
 
 
 

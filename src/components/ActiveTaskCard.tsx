@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Play, Pause, CheckCircle, Clock, Users, User } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Pause, CheckCircle, Clock, Users, User } from 'lucide-react'
 
 interface ActiveTask {
   id: string
@@ -30,7 +30,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
 
   useEffect(() => {
     fetchActiveTask()
-  }, [currentUserId])
+  }, [currentUserId, fetchActiveTask])
 
   // Listen for task status changes
   useEffect(() => {
@@ -40,9 +40,9 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
 
     window.addEventListener('taskStatusChanged', handleTaskStatusChange)
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [])
+  }, [fetchActiveTask])
 
-  const fetchActiveTask = async () => {
+  const fetchActiveTask = useCallback(async () => {
     if (!currentUserId) {
       setLoading(false)
       return
@@ -67,7 +67,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       const regularTasks = await regularTasksResponse.json()
       
       // Find running regular task for current user
-      const runningRegularTask = regularTasks.find((task: any) => 
+      const runningRegularTask = regularTasks.find((task: { assignedUser?: { id: string }; status: string }) => 
         task.assignedUser?.id === currentUserId && task.status === 'IN_PROGRESS'
       )
 
@@ -91,14 +91,25 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       
       // Find running group task where user is a member
       // Even admins can only interact with group tasks if they're members of the group
-      const runningGroupTask = groupTasks.find((task: any) => {
+      const runningGroupTask = groupTasks.find((task: { 
+        id: string; 
+        title: string; 
+        groupId: string; 
+        status: string; 
+        group?: { 
+          users?: Array<{ 
+            userId: string; 
+            user?: { username: string } 
+          }> 
+        } 
+      }) => {
         const isRunning = task.status === 'IN_PROGRESS'
-        const isMember = task.group?.users?.some((userGroup: any) => userGroup.userId === currentUserId)
+        const isMember = task.group?.users?.some((userGroup) => userGroup.userId === currentUserId)
         console.log(`[DEBUG] Checking group task ${task.id} (${task.title}):`, {
           isRunning,
           isMember,
           currentUserId,
-          groupUsers: task.group?.users?.map((u: any) => ({ userId: u.userId, username: u.user?.username }))
+          groupUsers: task.group?.users?.map((u) => ({ userId: u.userId, username: u.user?.username }))
         })
         return isRunning && isMember
       })
@@ -107,7 +118,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
         id: runningGroupTask.id,
         title: runningGroupTask.title,
         groupId: runningGroupTask.groupId,
-        groupUsers: runningGroupTask.group?.users?.map((u: any) => ({ userId: u.userId, username: u.user?.username }))
+        groupUsers: runningGroupTask.group?.users?.map((u) => ({ userId: u.userId, username: u.user?.username }))
       } : null)
 
       if (runningGroupTask) {
@@ -129,7 +140,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentUserId])
 
   const handlePause = async () => {
     if (!activeTask) return

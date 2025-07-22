@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface ActiveTask {
   id: string
@@ -25,11 +25,11 @@ interface DynamicTitleProps {
 
 export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
   const [activeTask, setActiveTask] = useState<ActiveTask | null>(null)
-  const [titlePosition, setTitlePosition] = useState(0)
+
 
   useEffect(() => {
     fetchActiveTask()
-  }, [currentUserId])
+  }, [currentUserId, fetchActiveTask])
 
   // Listen for task status changes
   useEffect(() => {
@@ -39,9 +39,9 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
 
     window.addEventListener('taskStatusChanged', handleTaskStatusChange)
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [])
+  }, [fetchActiveTask])
 
-  const fetchActiveTask = async () => {
+  const fetchActiveTask = useCallback(async () => {
     if (!currentUserId) {
       setActiveTask(null)
       return
@@ -53,7 +53,7 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
       const regularTasks = await regularTasksResponse.json()
       
       // Find running regular task for current user
-      const runningRegularTask = regularTasks.find((task: any) => 
+      const runningRegularTask = regularTasks.find((task: { assignedUser?: { id: string }; status: string }) => 
         task.assignedUser?.id === currentUserId && task.status === 'IN_PROGRESS'
       )
 
@@ -75,9 +75,14 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
       const groupTasks = await groupTasksResponse.json()
       
       // Find running group task where user is a member
-      const runningGroupTask = groupTasks.find((task: any) => {
+      const runningGroupTask = groupTasks.find((task: { 
+        status: string; 
+        group?: { 
+          users?: Array<{ userId: string }> 
+        } 
+      }) => {
         const isRunning = task.status === 'IN_PROGRESS'
-        const isMember = task.group?.users?.some((userGroup: any) => userGroup.userId === currentUserId)
+        const isMember = task.group?.users?.some((userGroup) => userGroup.userId === currentUserId)
         return isRunning && isMember
       })
 
@@ -98,7 +103,7 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
       console.error('Error fetching active task for title:', error)
       setActiveTask(null)
     }
-  }
+  }, [currentUserId])
 
   // Update page title based on active task
   useEffect(() => {

@@ -1,17 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Pause, CheckCircle, Clock } from 'lucide-react'
+import { Play, Pause, CheckCircle } from 'lucide-react'
 
 interface GroupTaskTimerProps {
   taskId: string
   status: string
-  timeSum: number
   isActive: boolean
   onStatusChange: (status: string) => void
 }
 
-export default function GroupTaskTimer({ taskId, status, timeSum, isActive, onStatusChange }: GroupTaskTimerProps) {
+export default function GroupTaskTimer({ taskId, status, isActive, onStatusChange }: GroupTaskTimerProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)

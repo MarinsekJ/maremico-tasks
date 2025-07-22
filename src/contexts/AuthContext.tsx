@@ -9,7 +9,7 @@ interface User {
   email: string
   username: string
   userType: 'ADMIN' | 'REGULAR_USER'
-  groups: any[]
+  groups: object[]
 }
 
 interface AuthContextType {

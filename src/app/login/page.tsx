@@ -136,7 +136,7 @@ export default function LoginPage() {
 
           <div className="w-92 items-center justify-center">
             <p className="mt-2 text-xs text-gray-600 text-center">
-              Powered by
+              v1.0.0 // created by
             </p>
             <img src="/jaka-marinsek-logo-only.svg" alt="Maremico Logo" className="h-5 mt-2 mx-auto"/>
           </div>

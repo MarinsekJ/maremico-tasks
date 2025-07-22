@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Clock, Calendar, Users, Filter, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -67,7 +67,7 @@ export default function GroupTasksPage() {
     if (user) {
       fetchGroupTasks()
     }
-  }, [selectedGroupId, user])
+  }, [selectedGroupId, user, fetchGroupTasks])
 
   const fetchGroups = async () => {
     try {
@@ -81,7 +81,7 @@ export default function GroupTasksPage() {
     }
   }
 
-  const fetchGroupTasks = async () => {
+  const fetchGroupTasks = useCallback(async () => {
     try {
       // Build URL with group filter
       let url = '/api/group-tasks'
@@ -100,7 +100,7 @@ export default function GroupTasksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedGroupId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -143,7 +143,7 @@ export default function GroupTasksPage() {
 
     window.addEventListener('taskStatusChanged', handleTaskStatusChange)
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
-  }, [])
+  }, [fetchGroupTasks])
 
   const handleTimerToggle = async (task: GroupTask) => {
     try {
@@ -187,7 +187,7 @@ export default function GroupTasksPage() {
 
         if (response.ok) {
           // Clear any other running timers since only one task can be active at a time
-          setRunningTimers(prev => {
+          setRunningTimers(() => {
             const updated: { [key: string]: { startTime: number; elapsed: number } } = {}
             // Only keep the new task as running
             updated[task.id] = { startTime: Date.now(), elapsed: 0 }
@@ -352,12 +352,12 @@ export default function GroupTasksPage() {
             
             // Check if user can interact with this task (must be a member of the group)
             const canInteractWithTask = user && 
-              task.group?.users?.some((groupUser: any) => groupUser.userId === user.id)
+              task.group?.users?.some((groupUser: { userId: string }) => groupUser.userId === user.id)
             
             // Debug logging
             console.log(`[DEBUG] Task: ${task.title}, User: ${user?.username} (ID: ${user?.id}), Can interact: ${canInteractWithTask}`)
-            console.log(`[DEBUG] Group users:`, task.group?.users?.map((gu: any) => ({ userId: gu.userId, username: gu.user?.username })))
-            console.log(`[DEBUG] User ID comparison:`, user?.id, 'vs group users:', task.group?.users?.map((gu: any) => gu.userId))
+            console.log(`[DEBUG] Group users:`, task.group?.users?.map((gu: { userId: string; user?: { username: string } }) => ({ userId: gu.userId, username: gu.user?.username })))
+            console.log(`[DEBUG] User ID comparison:`, user?.id, 'vs group users:', task.group?.users?.map((gu: { userId: string }) => gu.userId))
             return (
             <div 
               key={task.id} 
