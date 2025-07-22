@@ -133,7 +133,7 @@ export async function PATCH(
         })
 
         const existingUserIds = existingUsers.map(user => user.id)
-        const invalidUserIds = userIds.filter(userId => !existingUserIds.includes(userId))
+        const invalidUserIds = userIds.filter((userId: string) => !existingUserIds.includes(userId))
 
         if (invalidUserIds.length > 0) {
           return NextResponse.json(
