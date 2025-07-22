@@ -1,4 +1,4 @@
-import { User, Task, GroupTask, Group, TaskLog } from '@prisma/client'
+import { User, Task, GroupTask, Group, TaskLog } from '@/generated/prisma'
 
 export type UserWithGroups = User & {
   groups: {
