@@ -206,7 +206,7 @@ export default function TasksPage() {
         if (response.ok) {
           // Clear any other running timers since only one task can be active at a time
           setRunningTimers(prev => {
-            const updated = {}
+            const updated: { [key: string]: { startTime: number; elapsed: number } } = {}
             // Only keep the new task as running
             updated[task.id] = { startTime: Date.now(), elapsed: 0 }
             return updated
