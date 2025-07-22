@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
-    serverComponentsExternalPackages: ['bcryptjs']
-  },
+  serverExternalPackages: ['bcryptjs'],
   // Enable cross-origin requests for local network access
   async headers() {
     return [
