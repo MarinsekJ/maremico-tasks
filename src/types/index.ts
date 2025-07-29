@@ -15,6 +15,12 @@ export type TaskWithRelations = Task & {
 
 export type GroupTaskWithRelations = GroupTask & {
   group: Group
+  activeWorkers: {
+    id: string
+    userId: string
+    startedAt: string
+    user: User
+  }[]
   timePerUser: {
     user: User
     timeSpent: number

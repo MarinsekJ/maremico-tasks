@@ -50,14 +50,41 @@ export async function GET(request: NextRequest) {
           include: {
             users: {
               include: {
-                user: true
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    surname: true,
+                    username: true,
+                    email: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        activeWorkers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                username: true
               }
             }
           }
         },
         timePerUser: {
           include: {
-            user: true
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                username: true
+              }
+            }
           }
         }
       },
@@ -114,10 +141,45 @@ export async function POST(request: NextRequest) {
         groupId
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            users: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    surname: true,
+                    username: true,
+                    email: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        activeWorkers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                username: true
+              }
+            }
+          }
+        },
         timePerUser: {
           include: {
-            user: true
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                username: true
+              }
+            }
           }
         }
       }

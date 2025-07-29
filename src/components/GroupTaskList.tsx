@@ -2,76 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { Clock, Play, Pause, CheckCircle, AlertCircle, Users } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import GroupTaskTimer from './GroupTaskTimer'
 import { formatDate } from '@/lib/utils'
-
-interface GroupTask {
-  id: string
-  title: string
-  description?: string
-  deadline?: string
-  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'
-  timeSum: number
-  group: {
-    name: string
-    color: string
-    users?: Array<{
-      userId: string
-      user: {
-        id: string
-        name: string
-        surname: string
-        username: string
-      }
-    }>
-  }
-  timePerUser: {
-    user: {
-      name: string
-      surname: string
-    }
-    timeSpent: number
-  }[]
-}
+import type { GroupTaskWithRelations } from '@/types'
 
 interface GroupTaskListProps {
-  tasks: GroupTask[]
+  tasks: GroupTaskWithRelations[]
   loading: boolean
   onTaskUpdate: () => void
 }
 
 export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTaskListProps) {
+  const { user } = useAuth()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
-  const [user, setUser] = useState<{ id: string } | null>(null)
-
-  // Fetch current user
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me')
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      }
-    }
-    
-    fetchUser()
-  }, [])
 
   // Update activeTaskId when tasks are refreshed
   useEffect(() => {
-    // Find the task that is currently IN_PROGRESS
-    const runningTask = tasks.find(task => task.status === 'IN_PROGRESS')
-    if (runningTask) {
-      setActiveTaskId(runningTask.id)
+    // Find the task that the current user is actively working on
+    const userActiveTask = tasks.find(task => {
+      const isInProgress = task.status === 'IN_PROGRESS'
+      const isCurrentUserActive = task.activeWorkers?.some(aw => aw.userId === user?.id) || false
+      return isInProgress && isCurrentUserActive
+    })
+    
+    if (userActiveTask) {
+      setActiveTaskId(userActiveTask.id)
     } else {
       setActiveTaskId(null)
     }
-  }, [tasks])
+  }, [tasks, user?.id])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -109,10 +70,18 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
     return `${hours}h ${minutes}m`
   }
 
-  // Filter tasks to only show those where the user is a member
-  const userTasks = user ? tasks.filter(task => 
-    task.group?.users?.some((groupUser: { userId: string }) => groupUser.userId === user.id)
-  ) : []
+  // Filter tasks based on user type and membership
+  const userTasks = user ? tasks.filter(task => {
+    // If user is admin, show all tasks
+    if (user.userType === 'ADMIN') {
+      return true
+    }
+    
+    // For regular users, only show tasks where they are a member
+    const group = task.group as { users?: { user: { id: string } }[] }
+    const isMember = Array.isArray(group.users) && group.users.some((groupUser: { user: { id: string } }) => groupUser.user.id === user.id)
+    return isMember
+  }) : []
 
   const filteredTasks = selectedGroup === 'all'
     ? userTasks 
@@ -259,6 +228,9 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
                     // Refresh the task list to reflect the changes
                     onTaskUpdate()
                   }}
+                  currentUserId={user?.id}
+                  activeWorkers={task.activeWorkers}
+                  timePerUser={task.timePerUser}
                 />
               </div>
             </div>

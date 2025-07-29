@@ -68,50 +68,6 @@ export async function POST(
         case 'start':
           console.log(`[DEBUG] Starting group task ${groupTaskId} for user ${decoded.id}`)
           
-          // Find and pause any other running group task for this user
-          const otherRunningGroupTasks = await tx.groupTask.findMany({
-            where: {
-              status: 'IN_PROGRESS',
-              id: { not: groupTaskId },
-              group: {
-                users: {
-                  some: {
-                    userId: decoded.id
-                  }
-                }
-              }
-            }
-          })
-
-          console.log(`[DEBUG] Found ${otherRunningGroupTasks.length} other running group tasks for user ${decoded.id}`)
-
-          // Pause all other running group tasks
-          for (const runningGroupTask of otherRunningGroupTasks) {
-            console.log(`[DEBUG] Pausing group task ${runningGroupTask.id} (${runningGroupTask.title})`)
-            await tx.groupTask.update({
-              where: { id: runningGroupTask.id },
-              data: { 
-                status: 'PAUSED',
-                timeSum: runningGroupTask.timeSum + (timeSpent || 0)
-              }
-            })
-
-            // Log the pause action for other group tasks
-            try {
-              await tx.taskLog.create({
-                data: {
-                  userId: decoded.id,
-                  groupTaskId: runningGroupTask.id,
-                  taskType: 'GROUP_TASK',
-                  logType: 'PAUSED_TIMER',
-                  details: `Auto-paused when starting group task: ${groupTask.title}`
-                }
-              })
-            } catch (logError) {
-              console.warn('Failed to create task log for auto-pause:', logError)
-            }
-          }
-
           // Also pause any running regular/admin tasks for this user
           const runningRegularTasks = await tx.task.findMany({
             where: {
@@ -149,6 +105,23 @@ export async function POST(
             }
           }
 
+          // Add user to active workers
+          await tx.groupTaskActiveWorker.upsert({
+            where: {
+              userId_groupTaskId: {
+                userId: decoded.id,
+                groupTaskId: groupTaskId
+              }
+            },
+            update: {
+              startedAt: new Date()
+            },
+            create: {
+              userId: decoded.id,
+              groupTaskId: groupTaskId
+            }
+          })
+
           console.log(`[DEBUG] Starting group task ${groupTaskId} with status IN_PROGRESS`)
           updatedGroupTask = await tx.groupTask.update({
             where: { id: groupTaskId },
@@ -161,6 +134,11 @@ export async function POST(
                       user: true
                     }
                   }
+                }
+              },
+              activeWorkers: {
+                include: {
+                  user: true
                 }
               },
               timePerUser: {
@@ -199,6 +177,14 @@ export async function POST(
             })
           }
 
+          // Remove user from active workers
+          await tx.groupTaskActiveWorker.deleteMany({
+            where: {
+              userId: decoded.id,
+              groupTaskId: groupTaskId
+            }
+          })
+
           updatedGroupTask = await tx.groupTask.update({
             where: { id: groupTaskId },
             data: { 
@@ -213,6 +199,11 @@ export async function POST(
                       user: true
                     }
                   }
+                }
+              },
+              activeWorkers: {
+                include: {
+                  user: true
                 }
               },
               timePerUser: {
@@ -251,6 +242,14 @@ export async function POST(
             })
           }
 
+          // Remove user from active workers
+          await tx.groupTaskActiveWorker.deleteMany({
+            where: {
+              userId: decoded.id,
+              groupTaskId: groupTaskId
+            }
+          })
+
           updatedGroupTask = await tx.groupTask.update({
             where: { id: groupTaskId },
             data: { 
@@ -265,6 +264,11 @@ export async function POST(
                       user: true
                     }
                   }
+                }
+              },
+              activeWorkers: {
+                include: {
+                  user: true
                 }
               },
               timePerUser: {

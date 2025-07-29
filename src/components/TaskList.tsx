@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, Play, Pause, CheckCircle, AlertCircle } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import TaskTimer from './TaskTimer'
 import { formatDate, isTaskOverdue, forceMobileNavigation } from '@/lib/utils'
 import type { TaskWithRelations } from '@/types'
@@ -15,6 +16,7 @@ interface TaskListProps {
 
 export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
 
   // Update activeTaskId when tasks are refreshed
@@ -185,6 +187,8 @@ export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps
                       // Refresh the task list to reflect the changes
                       onTaskUpdate()
                     }}
+                    assignedUserId={task.assignedUser?.id}
+                    currentUserId={user?.id}
                   />
                 </div>
               </div>

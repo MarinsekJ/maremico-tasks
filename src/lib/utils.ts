@@ -1,4 +1,4 @@
-import { format, isBefore, parseISO } from 'date-fns'
+import { format, isBefore, parseISO, startOfDay } from 'date-fns'
 
 export function formatDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date
@@ -13,8 +13,9 @@ export function formatDateTime(date: Date | string): string {
 export function isTaskOverdue(deadline?: string): boolean {
   if (!deadline) return false
   const deadlineDate = parseISO(deadline)
-  const now = new Date()
-  return isBefore(deadlineDate, now)
+  const today = startOfDay(new Date())
+  // Only overdue if deadline is before today (not today)
+  return isBefore(deadlineDate, today)
 }
 
 export function sortTasksByDeadline<T extends { deadline?: Date | null }>(tasks: T[]): T[] {

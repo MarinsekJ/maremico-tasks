@@ -59,16 +59,17 @@ export default function DynamicTitle({ currentUserId }: DynamicTitleProps) {
       const groupTasksResponse = await fetch('/api/group-tasks')
       const groupTasks = await groupTasksResponse.json()
       
-      // Find running group task where user is a member
+      // Find running group task where user is the active worker
       const runningGroupTask = groupTasks.find((task: { 
-        status: string; 
+        status: string;
+        activeWorkers?: Array<{ userId: string }>;
         group?: { 
           users?: Array<{ userId: string }> 
         } 
       }) => {
         const isRunning = task.status === 'IN_PROGRESS'
-        const isMember = task.group?.users?.some((userGroup) => userGroup.userId === currentUserId)
-        return isRunning && isMember
+        const isCurrentUserActive = task.activeWorkers?.some((aw) => aw.userId === currentUserId)
+        return isRunning && isCurrentUserActive
       })
 
       if (runningGroupTask) {

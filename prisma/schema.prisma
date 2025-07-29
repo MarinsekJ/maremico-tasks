@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -32,6 +32,7 @@ model User {
   assignedTasks Task[]       @relation("TaskAssignee")
   taskLogs      TaskLog[]
   groupTaskTime GroupTaskTime[]
+  activeGroupTasks GroupTaskActiveWorker[]
 
   @@map("users")
 }
@@ -99,6 +100,7 @@ model GroupTask {
   groupId     String
   group       Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
   timePerUser GroupTaskTime[]
+  activeWorkers GroupTaskActiveWorker[]
 
   @@map("group_tasks")
 }
@@ -117,6 +119,20 @@ model GroupTaskTime {
 
   @@unique([userId, groupTaskId])
   @@map("group_task_time")
+}
+
+model GroupTaskActiveWorker {
+  id          String   @id @default(cuid())
+  userId      String
+  groupTaskId String
+  startedAt   DateTime @default(now())
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupTask GroupTask @relation(fields: [groupTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupTaskId])
+  @@map("group_task_active_workers")
 }
 
 model TaskLog {

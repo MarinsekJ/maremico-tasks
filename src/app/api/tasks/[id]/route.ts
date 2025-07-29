@@ -31,8 +31,10 @@ export async function GET(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Regular users can only view tasks assigned to them
-    if (decoded.userType === 'REGULAR_USER' && task.assignedUserId !== decoded.id) {
+    // Regular users can only view tasks assigned to them or tasks they created
+    if (decoded.userType === 'REGULAR_USER' && 
+        task.assignedUserId !== decoded.id && 
+        task.creatorId !== decoded.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -75,8 +77,10 @@ export async function PUT(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Regular users can only update tasks assigned to them
-    if (decoded.userType === 'REGULAR_USER' && task.assignedUserId !== decoded.id) {
+    // Regular users can only update tasks they created or tasks assigned to them
+    if (decoded.userType === 'REGULAR_USER' && 
+        task.creatorId !== decoded.id && 
+        task.assignedUserId !== decoded.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

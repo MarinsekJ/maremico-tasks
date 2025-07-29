@@ -82,6 +82,10 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
         title: string; 
         groupId: string; 
         status: string; 
+        activeWorkers?: Array<{ 
+          userId: string; 
+          user?: { username: string } 
+        }>;
         group?: { 
           users?: Array<{ 
             userId: string; 
@@ -91,13 +95,16 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       }) => {
         const isRunning = task.status === 'IN_PROGRESS'
         const isMember = task.group?.users?.some((userGroup) => userGroup.userId === currentUserId)
+        // Check if current user is the active worker for this task
+        const isCurrentUserActive = task.activeWorkers?.some(aw => aw.userId === currentUserId) || false
         console.log(`[DEBUG] Checking group task ${task.id} (${task.title}):`, {
           isRunning,
           isMember,
+          isCurrentUserActive,
           currentUserId,
           groupUsers: task.group?.users?.map((u: { userId: string; user?: { username: string } }) => ({ userId: u.userId, username: u.user?.username }))
         })
-        return isRunning && isMember
+        return isRunning && isMember && isCurrentUserActive
       })
 
       console.log(`[DEBUG] Found running group task:`, runningGroupTask ? {
@@ -142,6 +149,38 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
   }, [fetchActiveTask])
 
+  // Restore timer state from sessionStorage on mount
+  useEffect(() => {
+    if (!activeTask) return;
+    const saved = sessionStorage.getItem(`active-task-timer-${activeTask.id}`);
+    if (saved) {
+      try {
+        const { elapsedTime, timestamp } = JSON.parse(saved);
+        const now = Date.now();
+        const additional = Math.floor((now - timestamp) / 1000);
+        setActiveTask((prev) => prev ? { ...prev, elapsedTime: elapsedTime + additional } : prev);
+      } catch {}
+    }
+  }, [activeTask?.id]);
+
+  // Timer effect for elapsed time and persist to sessionStorage
+  useEffect(() => {
+    if (!activeTask) return;
+    const interval = setInterval(() => {
+      setActiveTask((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, elapsedTime: prev.elapsedTime + 1 };
+        sessionStorage.setItem(
+          `active-task-timer-${prev.id}`,
+          JSON.stringify({ elapsedTime: updated.elapsedTime, timestamp: Date.now() })
+        );
+        return updated;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeTask]);
+
+  // Remove timer state from sessionStorage when pausing or completing
   const handlePause = async () => {
     if (!activeTask) return
 
@@ -168,6 +207,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       })
 
       if (response.ok) {
+        sessionStorage.removeItem(`active-task-timer-${activeTask.id}`);
         setActiveTask(null)
         // Trigger refresh on other pages
         window.dispatchEvent(new CustomEvent('taskStatusChanged'))
@@ -203,6 +243,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       })
 
       if (response.ok) {
+        sessionStorage.removeItem(`active-task-timer-${activeTask.id}`);
         setActiveTask(null)
         // Trigger refresh on other pages
         window.dispatchEvent(new CustomEvent('taskStatusChanged'))
@@ -218,23 +259,6 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     const secs = seconds % 60
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
-
-  // Timer effect for elapsed time
-  useEffect(() => {
-    if (!activeTask) return
-
-    const interval = setInterval(() => {
-      setActiveTask(prev => {
-        if (!prev) return null
-        return {
-          ...prev,
-          elapsedTime: prev.elapsedTime + 1
-        }
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [activeTask])
 
   if (loading) {
     return (
@@ -329,8 +353,8 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       <div className="flex gap-2">
         <button
           onClick={handlePause}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-black text-sm rounded-lg transition-colors"
-            style={{ backgroundColor: '#b9a057' }}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-black text-sm rounded-lg transition-colors"
+          style={{ backgroundColor: '#b9a057' }}
         >
           <Pause className="h-4 w-4" />
           <span className="hidden sm:inline">Pause</span>
@@ -345,4 +369,4 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       </div>
     </div>
   )
-} 
+}
