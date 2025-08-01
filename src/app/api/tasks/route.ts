@@ -47,7 +47,50 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(tasks)
+    // Calculate time from logs for each task
+    const tasksWithCalculatedTime = await Promise.all(
+      tasks.map(async (task) => {
+        // Fetch logs for this task
+        const logs = await prisma.taskLog.findMany({
+          where: {
+            AND: [
+              { taskType: task.type },
+              { taskId: task.id }
+            ]
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        })
+
+        // Calculate total time from logs
+        let calculatedTimeSeconds = 0
+        let currentSessionStart: Date | null = null
+
+        for (const log of logs) {
+          if (log.logType === 'STARTED_TIMER') {
+            currentSessionStart = log.createdAt
+          } else if ((log.logType === 'PAUSED_TIMER' || log.logType === 'COMPLETED_TASK') && currentSessionStart) {
+            const sessionDuration = Math.floor((log.createdAt.getTime() - currentSessionStart.getTime()) / 1000)
+            calculatedTimeSeconds += sessionDuration
+            currentSessionStart = null
+          }
+        }
+
+        // If there's an active session, add the current session time
+        if (task.status === 'IN_PROGRESS' && currentSessionStart) {
+          const currentSessionDuration = Math.floor((new Date().getTime() - currentSessionStart.getTime()) / 1000)
+          calculatedTimeSeconds += currentSessionDuration
+        }
+
+        return {
+          ...task,
+          calculatedTimeSum: calculatedTimeSeconds
+        }
+      })
+    )
+
+    return NextResponse.json(tasksWithCalculatedTime)
   } catch (error) {
     console.error('Error fetching tasks:', error)
     return NextResponse.json(

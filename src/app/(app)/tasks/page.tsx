@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Clock, Calendar, User, Filter, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDate, isTaskOverdue } from '@/lib/utils'
+import Notification from '@/components/Notification'
 
 interface User {
   id: string
@@ -22,6 +23,7 @@ interface Task {
   status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED'
   type: 'ADMIN_TASK' | 'REGULAR_TASK'
   timeSum: number
+  calculatedTimeSum?: number
   assignedUser: {
     id: string
     name: string
@@ -48,6 +50,10 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [runningTimers, setRunningTimers] = useState<{ [key: string]: { startTime: number; elapsed: number } }>({})
+  const [notification, setNotification] = useState<{
+    message: string
+    type: 'success' | 'error' | 'info'
+  } | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -121,6 +127,27 @@ export default function TasksPage() {
     return () => clearInterval(interval)
   }, [user, selectedUserId, fetchTasks])
 
+  // Initialize running timers based on task status
+  useEffect(() => {
+    setRunningTimers(prev => {
+      const newRunningTimers: { [key: string]: { startTime: number; elapsed: number } } = {}
+      
+      tasks.forEach(task => {
+        if (task.status === 'IN_PROGRESS') {
+          // If task is already in running timers, keep its start time
+          if (prev[task.id]) {
+            newRunningTimers[task.id] = prev[task.id]
+          } else {
+            // If task is in progress but not in running timers, add it
+            newRunningTimers[task.id] = { startTime: Date.now(), elapsed: 0 }
+          }
+        }
+      })
+      
+      return newRunningTimers
+    })
+  }, [tasks])
+
   // Listen for task status changes from other pages
   useEffect(() => {
     const handleTaskStatusChange = () => {
@@ -192,10 +219,21 @@ export default function TasksPage() {
             delete updated[task.id]
             return updated
           })
+          // Show success notification
+          setNotification({
+            message: 'Timer paused',
+            type: 'info'
+          })
           // Refresh tasks
           fetchTasks()
           // Trigger event for ActiveTaskCard to refresh
           window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+        } else {
+          const errorData = await response.json()
+          setNotification({
+            message: errorData.error || 'Failed to pause timer',
+            type: 'error'
+          })
         }
       } else {
         // Start timer
@@ -217,6 +255,11 @@ export default function TasksPage() {
             updated[task.id] = { startTime: Date.now(), elapsed: 0 }
             return updated
           })
+          // Show success notification
+          setNotification({
+            message: 'Timer started',
+            type: 'info'
+          })
           // Refresh tasks - this will also reflect any auto-paused group tasks
           fetchTasks()
           
@@ -228,11 +271,20 @@ export default function TasksPage() {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('taskStatusChanged'))
           }, 100)
+        } else {
+          const errorData = await response.json()
+          setNotification({
+            message: errorData.error || 'Failed to start timer',
+            type: 'error'
+          })
         }
       }
     } catch (error) {
       console.error('Error toggling timer:', error)
-      alert('Failed to toggle timer')
+      setNotification({
+        message: 'Failed to toggle timer',
+        type: 'error'
+      })
     }
   }
 
@@ -256,6 +308,11 @@ export default function TasksPage() {
           delete updated[task.id]
           return updated
         })
+        // Show success notification
+        setNotification({
+          message: 'Task completed!',
+          type: 'success'
+        })
         // Refresh tasks
         fetchTasks()
         // Trigger event for ActiveTaskCard to refresh
@@ -263,7 +320,10 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error completing task:', error)
-      alert('Failed to complete task')
+      setNotification({
+        message: 'Failed to complete task',
+        type: 'error'
+      })
     }
   }
 
@@ -434,7 +494,7 @@ export default function TasksPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Clock className="h-4 w-4" />
-                    <span>{formatTime(task.timeSum)}</span>            
+                    <span>{formatTime(task.calculatedTimeSum || task.timeSum)}</span>            
                   </div>
                   <div>
                   <button
@@ -476,7 +536,7 @@ export default function TasksPage() {
                         </>
                       )}
                     </button>
-                    {task.status !== 'COMPLETED' && task.timeSum > 0 && (
+                    {task.status !== 'COMPLETED' && (task.timeSum > 0 || runningTimers[task.id]) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -510,6 +570,16 @@ export default function TasksPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
             <p className="text-gray-600">Create your first task to get started</p>
           </div>
+        )}
+
+        {/* Notification */}
+        {notification && (
+          <Notification
+            key={`${notification.message}-${Date.now()}`}
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
         )}
       </div>
   )

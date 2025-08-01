@@ -63,8 +63,8 @@ export async function POST(
             await tx.task.update({
               where: { id: runningTask.id },
               data: { 
-                status: 'PAUSED',
-                timeSum: runningTask.timeSum + (timeSpent || 0)
+                status: 'PAUSED'
+                // Don't add timeSum here - the elapsed time will be added when the user manually pauses the task
               }
             })
 
@@ -109,8 +109,8 @@ export async function POST(
               await tx.groupTask.update({
                 where: { id: runningGroupTask.id },
                 data: { 
-                  status: 'PAUSED',
-                  timeSum: runningGroupTask.timeSum + (timeSpent || 0)
+                  status: 'PAUSED'
+                  // Don't add timeSum here - the elapsed time will be added when the user manually pauses the task
                 }
               })
 
@@ -145,6 +145,7 @@ export async function POST(
           break
 
         case 'pause':
+          console.log(`[DEBUG] Pausing task ${taskId}: current timeSum=${task.timeSum}, timeSpent=${timeSpent}, new timeSum=${task.timeSum + (timeSpent || 0)}`)
           updatedTask = await tx.task.update({
             where: { id: taskId },
             data: { 
@@ -156,10 +157,12 @@ export async function POST(
               creator: true
             }
           })
+          console.log(`[DEBUG] Task ${taskId} paused: updated timeSum=${updatedTask.timeSum}`)
           logType = 'PAUSED_TIMER'
           break
 
         case 'complete':
+          console.log(`[DEBUG] Completing task ${taskId}: current timeSum=${task.timeSum}, timeSpent=${timeSpent}, new timeSum=${task.timeSum + (timeSpent || 0)}`)
           updatedTask = await tx.task.update({
             where: { id: taskId },
             data: { 
@@ -171,6 +174,7 @@ export async function POST(
               creator: true
             }
           })
+          console.log(`[DEBUG] Task ${taskId} completed: updated timeSum=${updatedTask.timeSum}`)
           logType = 'COMPLETED_TASK'
           break
 

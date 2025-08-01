@@ -86,10 +86,18 @@ export default function CreateGroupTaskPage() {
     setLoading(true)
 
     try {
+      // Set deadline to 23:00 on the selected date if deadline is provided
+      let deadlineWithTime = undefined
+      if (formData.deadline) {
+        const selectedDate = new Date(formData.deadline)
+        selectedDate.setHours(23, 59, 0, 0) // Set to 23:00:00.000
+        deadlineWithTime = selectedDate.toISOString()
+      }
+
       const groupTaskData = {
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
-        deadline: formData.deadline || undefined,
+        deadline: deadlineWithTime,
         groupId: formData.groupId
       }
 

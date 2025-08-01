@@ -11,6 +11,7 @@ export type UserWithGroups = User & {
 export type TaskWithRelations = Task & {
   assignedUser: User | null
   creator: User
+  calculatedTimeSum?: number
 }
 
 export type GroupTaskWithRelations = GroupTask & {
@@ -25,6 +26,7 @@ export type GroupTaskWithRelations = GroupTask & {
     user: User
     timeSpent: number
   }[]
+  calculatedTimeSum?: number
 }
 
 export type GroupWithUsers = Group & {

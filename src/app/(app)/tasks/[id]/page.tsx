@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, Calendar, User, Edit, Play, Trash2, Save, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDateTime, isTaskOverdue } from '@/lib/utils'
+import Notification from '@/components/Notification'
 
 interface Task {
   id: string
@@ -71,6 +72,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [timerRunning, setTimerRunning] = useState(false)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [calculatedTimeSum, setCalculatedTimeSum] = useState(0)
   const [taskId, setTaskId] = useState<string>('')
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState({
@@ -79,6 +81,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     deadline: '',
     assignedUserId: ''
   })
+  const [notification, setNotification] = useState<{
+    message: string
+    type: 'success' | 'error' | 'info'
+  } | null>(null)
 
   const fetchTask = useCallback(async (id: string) => {
     try {
@@ -102,6 +108,19 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       setLoading(false)
     }
   }, [router])
+
+  const fetchCalculatedTime = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${id}/time-calculated`)
+      if (response.ok) {
+        const data = await response.json()
+        setCalculatedTimeSum(data.calculatedTimeSeconds)
+        console.log(`[DEBUG] Task ${id}: Calculated time from logs: ${data.calculatedTimeSeconds}s, Stored timeSum: ${data.storedTimeSum}s`)
+      }
+    } catch (error) {
+      console.error('Error fetching calculated time:', error)
+    }
+  }, [])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -138,6 +157,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         const { id } = await params
         setTaskId(id)
         await fetchTask(id)
+        await fetchCalculatedTime(id)
         await fetchTaskLogs(id)
         await fetchUsers()
       }
@@ -254,12 +274,60 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
   }, [timerRunning, startTime])
 
+  // Initialize timer state based on task status
+  useEffect(() => {
+    if (task && task.status === 'IN_PROGRESS') {
+      setTimerRunning(true)
+      // If we don't have a start time, set it to now (this will be corrected when we fetch the actual start time)
+      if (!startTime) {
+        setStartTime(Date.now())
+      }
+    } else {
+      setTimerRunning(false)
+      setStartTime(null)
+      setElapsedTime(0)
+    }
+  }, [task?.status])
+
+  // Effect to handle auto-pause and immediately add elapsed time to total
+  useEffect(() => {
+    if (task && task.status !== 'IN_PROGRESS' && elapsedTime > 0) {
+      console.log(`[DEBUG] Task detail: Task ${taskId} auto-paused, immediately adding elapsed time ${elapsedTime} to total`)
+      // Immediately send a pause request to add the elapsed time to the total
+      fetch(`/api/tasks/${taskId}/timer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'pause',
+          timeSpent: elapsedTime
+        }),
+      }).then(response => {
+        if (response.ok) {
+          console.log(`[DEBUG] Task detail: Successfully added elapsed time ${elapsedTime} to task ${taskId} total`)
+          // Refresh task data
+          fetchTask(taskId)
+          // Trigger refresh on other pages
+          window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+        }
+      }).catch(error => {
+        console.error('Error adding elapsed time for auto-paused task:', error)
+      })
+    }
+  }, [task?.status, elapsedTime, taskId])
+
   const handleTimerToggle = async () => {
     if (!task) return
 
     try {
       if (timerRunning) {
         // Pause timer
+        const timeSpent = elapsedTime
+        
+        // Use current elapsed time - auto-paused tasks already had their time added
+        
+        console.log(`[DEBUG] Frontend pausing task ${taskId}: elapsedTime=${elapsedTime}, timeSpent=${timeSpent}`)
         const response = await fetch(`/api/tasks/${taskId}/timer`, {
           method: 'POST',
           headers: {
@@ -267,7 +335,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           },
           body: JSON.stringify({
             action: 'pause',
-            timeSpent: elapsedTime
+            timeSpent: timeSpent
           }),
         })
 
@@ -320,6 +388,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     if (!task) return
 
     try {
+      const timeSpent = timerRunning ? elapsedTime : 0
+      
+      // Use current elapsed time - auto-paused tasks already had their time added
+      
+      console.log(`[DEBUG] Frontend completing task ${taskId}: timerRunning=${timerRunning}, elapsedTime=${elapsedTime}, timeSpent=${timeSpent}`)
       const response = await fetch(`/api/tasks/${taskId}/timer`, {
         method: 'POST',
         headers: {
@@ -327,7 +400,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         },
         body: JSON.stringify({
           action: 'complete',
-          timeSpent: timerRunning ? elapsedTime : 0
+          timeSpent: timeSpent
         }),
       })
 
@@ -335,6 +408,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         setTimerRunning(false)
         setStartTime(null)
         setElapsedTime(0)
+        // Show success notification
+        setNotification({
+          message: 'Task completed!',
+          type: 'success'
+        })
         // Refresh task data and logs
         await fetchTask(taskId)
         await fetchTaskLogs(taskId)
@@ -344,9 +422,15 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error completing task:', error)
       if (error instanceof Error && error.message.includes('Only the assigned user')) {
-        alert('Only the assigned user can complete this task')
+        setNotification({
+          message: 'Only the assigned user can complete this task',
+          type: 'error'
+        })
       } else {
-        alert('Failed to complete task')
+        setNotification({
+          message: 'Failed to complete task',
+          type: 'error'
+        })
       }
     }
   }
@@ -366,6 +450,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       })
 
       if (response.ok) {
+        // Show success notification
+        setNotification({
+          message: 'Task marked as uncomplete',
+          type: 'info'
+        })
         // Refresh task data and logs
         await fetchTask(taskId)
         await fetchTaskLogs(taskId)
@@ -373,9 +462,15 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Error uncompleting task:', error)
       if (error instanceof Error && error.message.includes('Only the assigned user')) {
-        alert('Only the assigned user can uncomplete this task')
+        setNotification({
+          message: 'Only the assigned user can uncomplete this task',
+          type: 'error'
+        })
       } else {
-        alert('Failed to uncomplete task')
+        setNotification({
+          message: 'Failed to uncomplete task',
+          type: 'error'
+        })
       }
     }
   }
@@ -610,7 +705,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                         </>
                       )}
                     </button>
-                    {task.status !== 'COMPLETED' && task.timeSum > 0 && (
+                    {task.status !== 'COMPLETED' && (task.timeSum > 0 || timerRunning) && (
                       <button
                         onClick={handleCompleteTask}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -733,7 +828,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <Clock className="h-5 w-5 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Time Spent</p>
-                  <p className="text-sm text-gray-600">{formatTime(task.timeSum)}</p>
+                  <p className="text-sm text-gray-600">{formatTime(calculatedTimeSum + (timerRunning ? elapsedTime : 0))}</p>
                 </div>
               </div>
             </div>
@@ -741,13 +836,26 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center">
                   {canEdit() && (
-                    <button
-                      onClick={() => setEditing(true)}
-                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors text-sm"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit task
-                    </button>
+                    <div className="relative group">
+                      <button
+                        onClick={() => setEditing(true)}
+                        disabled={timerRunning}
+                        className={`flex items-center gap-2 transition-colors text-sm ${
+                          timerRunning 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-blue-600 hover:text-blue-700'
+                        }`}
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit task
+                      </button>
+                      {timerRunning && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                          Task lahko urejaš ko ugasneš timer
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <button
                     onClick={() => setShowDeleteModal(true)}
@@ -875,6 +983,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
              )}
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          key={`${notification.message}-${Date.now()}`}
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
      </div>
    )
  }  

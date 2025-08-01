@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, CheckCircle, Users, TrendingUp, Calendar, X, User, Eye } from 'lucide-react'
+import { Clock, CheckCircle, TrendingUp, Calendar, X, User, Eye, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 
@@ -39,6 +39,7 @@ interface GroupTask {
   description?: string
   status: string
   timeSum: number
+  deadline?: string
   createdAt: string
   updatedAt: string
   group: {
@@ -61,6 +62,10 @@ interface Analytics {
   completedAdminTasks: number
   completedRegularTasks: number
   completedGroupTasks: number
+  openAdminTasks: number
+  openRegularTasks: number
+  openGroupTasks: number
+  totalOpenTasks: number
   totalHours: number
   timePerTaskType: {
     admin: number
@@ -68,6 +73,11 @@ interface Analytics {
     group: number
   }
   tasksByType: {
+    admin: Task[]
+    regular: Task[]
+    group: GroupTask[]
+  }
+  openTasksByType: {
     admin: Task[]
     regular: Task[]
     group: GroupTask[]
@@ -131,6 +141,13 @@ export default function AnalyticsPage() {
     }
   }, [selectedMonth, selectedYear, selectedUserId])
 
+  // Set selectedUserId when currentUser is available
+  useEffect(() => {
+    if (currentUser?.id && !selectedUserId) {
+      setSelectedUserId(currentUser.id)
+    }
+  }, [currentUser, selectedUserId])
+
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
@@ -138,18 +155,17 @@ export default function AnalyticsPage() {
         return
       }
       
-      // Set default user to current user for regular users
-      if (!isAdmin) {
-        setSelectedUserId(currentUser?.id || '')
-      } else {
-        // For admins, default to current user but allow changing
-        setSelectedUserId(currentUser?.id || '')
-      }
-      
       fetchAnalytics()
       fetchUsers()
     }
-  }, [isAuthenticated, authLoading, isAdmin, currentUser, router, fetchAnalytics, fetchUsers])
+  }, [isAuthenticated, authLoading, router, fetchAnalytics, fetchUsers])
+
+  // Refetch analytics when selectedUserId changes
+  useEffect(() => {
+    if (selectedUserId && !authLoading && isAuthenticated) {
+      fetchAnalytics()
+    }
+  }, [selectedUserId, fetchAnalytics, authLoading, isAuthenticated])
 
   const formatTime = (hours: number) => {
     const wholeHours = Math.floor(hours)
@@ -220,7 +236,7 @@ export default function AnalyticsPage() {
             {isAdmin ? 'Viewing analytics for' : 'Your analytics for'}
           </p>
           <h1 className="text-3xl font-bold text-gray-900">
-            {isAdmin && selectedUser ? `${selectedUser.name} ${selectedUser.surname}` : `${currentUser?.name} ${currentUser?.surname}`}
+            {selectedUser ? `${selectedUser.name} ${selectedUser.surname}` : `${currentUser?.name} ${currentUser?.surname}`}
           </h1>
         </div>
 
@@ -231,12 +247,14 @@ export default function AnalyticsPage() {
               {/* User Filter (Admin only) */}
               {isAdmin && (
                 <select
-                  value={selectedUserId}
+                  value={selectedUserId || ''}
                   onChange={(e) => setSelectedUserId(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 >
-                  <option value={currentUser?.id}>My Analytics</option>
-                  {users.map((u) => (
+                  <option value={currentUser?.id || ''}>
+                    {currentUser?.name} {currentUser?.surname} (My Analytics)
+                  </option>
+                  {users.filter(u => u.id !== currentUser?.id).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name} {u.surname} ({u.userType === 'ADMIN' ? 'Admin' : 'User'})
                     </option>
@@ -299,12 +317,12 @@ export default function AnalyticsPage() {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-6 w-6 text-purple-600" />
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Group Tasks Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.completedGroupTasks}</p>
+                <p className="text-sm font-medium text-gray-600">Open Tasks</p>
+                <p className="text-2xl font-bold text-gray-900">{analytics.totalOpenTasks}</p>
               </div>
             </div>
           </div>
@@ -400,6 +418,124 @@ export default function AnalyticsPage() {
                     style={{ width: `${analytics.totalHours > 0 ? (analytics.timePerTaskType.group / analytics.totalHours) * 100 : 0}%` }}
                   ></div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Open Tasks Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+            Open Tasks ({analytics.totalOpenTasks})
+          </h3>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Open Admin Tasks */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+                <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
+                Admin Tasks ({analytics.openAdminTasks})
+              </h4>
+              <div className="space-y-2">
+                {analytics.openTasksByType.admin.length > 0 ? (
+                  analytics.openTasksByType.admin.map((task) => (
+                    <div 
+                      key={task.id} 
+                      className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => openTaskModal(task)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                          <p className="text-sm text-gray-500 capitalize">{task.status.toLowerCase().replace('_', ' ')}</p>
+                          {task.deadline && (
+                            <p className="text-xs text-red-600">
+                              Due: {new Date(task.deadline).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4 text-sm">No open admin tasks</p>
+                )}
+              </div>
+            </div>
+
+            {/* Open Regular Tasks */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+                Regular Tasks ({analytics.openRegularTasks})
+              </h4>
+              <div className="space-y-2">
+                {analytics.openTasksByType.regular.length > 0 ? (
+                  analytics.openTasksByType.regular.map((task) => (
+                    <div 
+                      key={task.id} 
+                      className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => openTaskModal(task)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                          <p className="text-sm text-gray-500 capitalize">{task.status.toLowerCase().replace('_', ' ')}</p>
+                          {task.deadline && (
+                            <p className="text-xs text-red-600">
+                              Due: {new Date(task.deadline).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4 text-sm">No open regular tasks</p>
+                )}
+              </div>
+            </div>
+
+            {/* Open Group Tasks */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+                Group Tasks ({analytics.openGroupTasks})
+              </h4>
+              <div className="space-y-2">
+                {analytics.openTasksByType.group.length > 0 ? (
+                  analytics.openTasksByType.group.map((task) => (
+                    <div 
+                      key={task.id} 
+                      className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => openTaskModal(task)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: task.group.color }}
+                            ></div>
+                            <p className="text-sm text-gray-500">{task.group.name}</p>
+                          </div>
+                          <p className="text-sm text-gray-500 capitalize">{task.status.toLowerCase().replace('_', ' ')}</p>
+                          {task.deadline && (
+                            <p className="text-xs text-red-600">
+                              Due: {new Date(task.deadline).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4 text-sm">No open group tasks</p>
+                )}
               </div>
             </div>
           </div>

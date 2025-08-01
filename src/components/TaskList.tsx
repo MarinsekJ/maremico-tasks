@@ -12,9 +12,10 @@ interface TaskListProps {
   tasks: TaskWithRelations[]
   loading: boolean
   onTaskUpdate: () => void
+  onNotification?: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps) {
+export default function TaskList({ tasks, loading, onTaskUpdate, onNotification }: TaskListProps) {
   const router = useRouter()
   const { user } = useAuth()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -155,7 +156,7 @@ export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps
                   
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>Time: {formatTime(task.timeSum)}</span>
+                    <span>Time: {formatTime(task.calculatedTimeSum || task.timeSum)}</span>
                   </div>
 
                   {task.assignedUser && (
@@ -176,6 +177,7 @@ export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps
                     taskId={task.id}
                     status={task.status}
                     timeSum={task.timeSum}
+                    calculatedTimeSum={task.calculatedTimeSum}
                     isActive={activeTaskId === task.id}
                     onStatusChange={(newStatus) => {
                       if (newStatus === 'IN_PROGRESS') {
@@ -189,6 +191,7 @@ export default function TaskList({ tasks, loading, onTaskUpdate }: TaskListProps
                     }}
                     assignedUserId={task.assignedUser?.id}
                     currentUserId={user?.id}
+                    onNotification={onNotification}
                   />
                 </div>
               </div>

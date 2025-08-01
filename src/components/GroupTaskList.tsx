@@ -1,19 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Clock, Play, Pause, CheckCircle, AlertCircle, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import GroupTaskTimer from './GroupTaskTimer'
-import { formatDate } from '@/lib/utils'
+import { formatDate, forceMobileNavigation } from '@/lib/utils'
 import type { GroupTaskWithRelations } from '@/types'
 
 interface GroupTaskListProps {
   tasks: GroupTaskWithRelations[]
   loading: boolean
   onTaskUpdate: () => void
+  onNotification?: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTaskListProps) {
+export default function GroupTaskList({ tasks, loading, onTaskUpdate, onNotification }: GroupTaskListProps) {
+  const router = useRouter()
   const { user } = useAuth()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
@@ -68,6 +71,12 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
     return `${hours}h ${minutes}m`
+  }
+
+  const handleTaskClick = (taskId: string) => {
+    // Force navigation on mobile
+    const url = forceMobileNavigation(`/group-tasks/${taskId}`)
+    router.push(url)
   }
 
   // Filter tasks based on user type and membership
@@ -138,7 +147,8 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
         {filteredTasks.map((task) => (
           <div
             key={task.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleTaskClick(task.id)}
           >
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
               <div className="flex-1 min-w-0">
@@ -181,7 +191,7 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
                 <div className="mb-3">
                   <div className="flex items-center gap-1 text-sm text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span className="font-medium">Total Time: {formatTime(task.timeSum)}</span>
+                    <span className="font-medium">Total Time: {formatTime(task.calculatedTimeSum || task.timeSum)}</span>
                   </div>
                 </div>
 
@@ -214,24 +224,27 @@ export default function GroupTaskList({ tasks, loading, onTaskUpdate }: GroupTas
               </div>
 
               <div className="flex-shrink-0">
-                <GroupTaskTimer
-                  taskId={task.id}
-                  status={task.status}
-                  isActive={activeTaskId === task.id}
-                  onStatusChange={(newStatus) => {
-                    if (newStatus === 'IN_PROGRESS') {
-                      // Clear any other active task since only one can be active at a time
-                      setActiveTaskId(task.id)
-                    } else {
-                      setActiveTaskId(null)
-                    }
-                    // Refresh the task list to reflect the changes
-                    onTaskUpdate()
-                  }}
-                  currentUserId={user?.id}
-                  activeWorkers={task.activeWorkers}
-                  timePerUser={task.timePerUser}
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <GroupTaskTimer
+                    taskId={task.id}
+                    status={task.status}
+                    isActive={activeTaskId === task.id}
+                    onStatusChange={(newStatus) => {
+                      if (newStatus === 'IN_PROGRESS') {
+                        // Clear any other active task since only one can be active at a time
+                        setActiveTaskId(task.id)
+                      } else {
+                        setActiveTaskId(null)
+                      }
+                      // Refresh the task list to reflect the changes
+                      onTaskUpdate()
+                    }}
+                    currentUserId={user?.id}
+                    activeWorkers={task.activeWorkers}
+                    timePerUser={task.timePerUser}
+                    onNotification={onNotification}
+                  />
+                </div>
               </div>
             </div>
           </div>

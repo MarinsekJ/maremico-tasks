@@ -105,11 +105,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </nav>
           
-          {/* Powered by section - Mobile */}
+          {/* Powered by section and version - Mobile */}
           <div className="px-4 py-4 border-t border-gray-200">
             <div className="flex flex-col items-center">
               <p className="text-xs text-gray-600 text-center">
-                Powered by
+                v1.0.0 // created by
               </p>
               <img src="/jaka-marinsek-logo-only.svg" alt="Maremico Logo" className="h-5 mt-2 align-middle"/>
             </div>
@@ -161,11 +161,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </nav>
           
-          {/* Powered by section - Desktop */}
+          {/* Powered by section and version - Desktop */}
           <div className="px-4 py-4 border-t border-gray-200">
             <div className="flex flex-col items-center justify-center">
               <p className="text-xs text-gray-600 text-center">
-                Powered by
+                  v1.0.0 // created by
               </p>
               <img src="/jaka-marinsek-logo-only.svg" alt="Maremico Logo" className="h-5 mt-2"/>
             </div>

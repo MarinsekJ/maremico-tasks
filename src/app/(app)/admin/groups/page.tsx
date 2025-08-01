@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Plus, Edit, Trash2, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDate } from '@/lib/utils'
-import DashboardLayout from '@/components/DashboardLayout'
 
 interface Group {
   id: string
@@ -99,15 +98,14 @@ export default function AdminGroupsPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Group Management</h1>
-            <p className="text-gray-600 mt-1">Manage groups and their members</p>
-          </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Group Management</h1>
+          <p className="text-gray-600 mt-1">Manage groups and their members</p>
         </div>
+      </div>
 
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -245,6 +243,5 @@ export default function AdminGroupsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   )
 } 

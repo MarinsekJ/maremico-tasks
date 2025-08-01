@@ -93,7 +93,50 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(groupTasks)
+    // Calculate time from logs for each group task
+    const groupTasksWithCalculatedTime = await Promise.all(
+      groupTasks.map(async (groupTask) => {
+        // Fetch logs for this group task
+        const logs = await prisma.taskLog.findMany({
+          where: {
+            AND: [
+              { taskType: 'GROUP_TASK' },
+              { groupTaskId: groupTask.id }
+            ]
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        })
+
+        // Calculate total time from logs
+        let calculatedTimeSeconds = 0
+        let currentSessionStart: Date | null = null
+
+        for (const log of logs) {
+          if (log.logType === 'STARTED_TIMER') {
+            currentSessionStart = log.createdAt
+          } else if ((log.logType === 'PAUSED_TIMER' || log.logType === 'COMPLETED_TASK') && currentSessionStart) {
+            const sessionDuration = Math.floor((log.createdAt.getTime() - currentSessionStart.getTime()) / 1000)
+            calculatedTimeSeconds += sessionDuration
+            currentSessionStart = null
+          }
+        }
+
+        // If there's an active session, add the current session time
+        if (groupTask.status === 'IN_PROGRESS' && currentSessionStart) {
+          const currentSessionDuration = Math.floor((new Date().getTime() - currentSessionStart.getTime()) / 1000)
+          calculatedTimeSeconds += currentSessionDuration
+        }
+
+        return {
+          ...groupTask,
+          calculatedTimeSum: calculatedTimeSeconds
+        }
+      })
+    )
+
+    return NextResponse.json(groupTasksWithCalculatedTime)
   } catch (error) {
     console.error('Error fetching group tasks:', error)
     return NextResponse.json(

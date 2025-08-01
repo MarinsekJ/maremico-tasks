@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import TaskList from '@/components/TaskList'
 import GroupTaskList from '@/components/GroupTaskList'
 import Calendar from '@/components/Calendar'
+import Notification from '@/components/Notification'
 import { format } from 'date-fns'
 import { formatDate, isTaskOverdue, sortTasksByDeadline } from '@/lib/utils'
 import type { TaskWithRelations, GroupTaskWithRelations } from '@/types'
@@ -19,6 +20,14 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [groupTasks, setGroupTasks] = useState<GroupTaskWithRelations[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
+  const [notification, setNotification] = useState<{
+    message: string
+    type: 'success' | 'error' | 'info'
+  } | null>(null)
+
+  const handleNotification = (message: string, type: 'success' | 'error' | 'info') => {
+    setNotification({ message, type })
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -156,6 +165,7 @@ export default function DashboardPage() {
                   tasks={sortTasksByDeadline(getOverdueTasks())} 
                   loading={loadingTasks}
                   onTaskUpdate={fetchTasks}
+                  onNotification={handleNotification}
                 />
               </div>
             )}
@@ -179,6 +189,7 @@ export default function DashboardPage() {
                 tasks={sortTasksByDeadline(getTodayTasks())} 
                 loading={loadingTasks}
                 onTaskUpdate={fetchTasks}
+                onNotification={handleNotification}
               />
             </div>
 
@@ -199,6 +210,7 @@ export default function DashboardPage() {
                   tasks={sortTasksByDeadline(getUndatedTasks())} 
                   loading={loadingTasks}
                   onTaskUpdate={fetchTasks}
+                  onNotification={handleNotification}
                 />
               </div>
             )}
@@ -226,8 +238,19 @@ export default function DashboardPage() {
             tasks={groupTasks.filter((task: GroupTaskWithRelations) => task.status !== 'COMPLETED')} 
             loading={loadingTasks}
             onTaskUpdate={fetchGroupTasks}
+            onNotification={handleNotification}
           />
         </div>
+
+        {/* Notification */}
+        {notification && (
+          <Notification
+            key={`${notification.message}-${Date.now()}`}
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
+        )}
       </div>
   )
 } 

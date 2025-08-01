@@ -442,7 +442,7 @@ export default function GroupTaskDetail({ params }: { params: Promise<{ id: stri
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Total Time</label>
-              <p className="text-gray-900">{formatTime(groupTask.timeSum)}</p>
+              <p className="text-gray-900">{formatTime(groupTask.timeSum + (groupTask.status === 'IN_PROGRESS' ? Math.floor(elapsedTime / 1000) : 0))}</p>
             </div>
           </div>
 

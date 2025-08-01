@@ -37,6 +37,8 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     try {
       setLoading(true)
       
+
+      
       // Fetch current user info to check if they're an admin
       const userResponse = await fetch('/api/auth/me')
       const userData = await userResponse.json()
@@ -63,7 +65,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
           title: runningRegularTask.title,
           type: runningRegularTask.type,
           status: runningRegularTask.status,
-          timeSum: runningRegularTask.timeSum,
+          timeSum: runningRegularTask.calculatedTimeSum || runningRegularTask.timeSum,
           elapsedTime: 0,
           assignedUser: runningRegularTask.assignedUser
         })
@@ -120,7 +122,7 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
           title: runningGroupTask.title,
           type: 'GROUP_TASK',
           status: runningGroupTask.status,
-          timeSum: runningGroupTask.timeSum,
+          timeSum: runningGroupTask.calculatedTimeSum || runningGroupTask.timeSum,
           elapsedTime: 0,
           group: runningGroupTask.group
         })
@@ -149,18 +151,16 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
     return () => window.removeEventListener('taskStatusChanged', handleTaskStatusChange)
   }, [fetchActiveTask])
 
-  // Restore timer state from sessionStorage on mount
+  // Reset timer state when active task changes
   useEffect(() => {
     if (!activeTask) return;
-    const saved = sessionStorage.getItem(`active-task-timer-${activeTask.id}`);
-    if (saved) {
-      try {
-        const { elapsedTime, timestamp } = JSON.parse(saved);
-        const now = Date.now();
-        const additional = Math.floor((now - timestamp) / 1000);
-        setActiveTask((prev) => prev ? { ...prev, elapsedTime: elapsedTime + additional } : prev);
-      } catch {}
-    }
+    
+    // Always start with 0 elapsed time for a new active task
+    // This ensures the timer resets when switching between tasks or when a task is paused/resumed
+    setActiveTask((prev) => prev ? { ...prev, elapsedTime: 0 } : prev);
+    
+    // Clear any old sessionStorage data for this task
+    sessionStorage.removeItem(`active-task-timer-${activeTask.id}`);
   }, [activeTask?.id]);
 
   // Timer effect for elapsed time and persist to sessionStorage
@@ -341,12 +341,9 @@ export default function ActiveTaskCard({ currentUserId }: ActiveTaskCardProps) {
       </div>
 
       <div className="mb-4">
-        <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+        <div className="flex items-center gap-1 text-sm text-gray-600">
           <Clock className="h-4 w-4" />
-          <span>Total: {formatTime(activeTask.timeSum + activeTask.elapsedTime)}</span>
-        </div>
-        <div className="text-xs text-blue-600 font-medium">
-          Active: {formatTime(activeTask.elapsedTime)}
+          <span className="text-blue-600 font-medium">Current Session: {formatTime(activeTask.elapsedTime)}</span>
         </div>
       </div>
 

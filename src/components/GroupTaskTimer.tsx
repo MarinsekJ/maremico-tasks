@@ -27,11 +27,13 @@ interface GroupTaskTimerProps {
     }
     timeSpent: number
   }[]
+  onNotification?: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function GroupTaskTimer({ taskId, status, isActive, onStatusChange, currentUserId, activeWorkers, timePerUser }: GroupTaskTimerProps) {
+export default function GroupTaskTimer({ taskId, status, isActive, onStatusChange, currentUserId, activeWorkers, timePerUser, onNotification }: GroupTaskTimerProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number | null>(null)
 
@@ -96,7 +98,7 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, status, isCurrentUserActive])
 
-  // Additional effect to handle auto-pause scenarios
+  // Additional effect to handle status changes (auto-pause and manual pause)
   useEffect(() => {
     // If status is not IN_PROGRESS, ensure timer is stopped
     if (status !== 'IN_PROGRESS' || !isCurrentUserActive) {
@@ -106,11 +108,37 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
+      
+      // If this was an auto-pause (status changed but we still have elapsed time), immediately add it to total time
+      if (elapsedTime > 0) {
+        console.log(`[DEBUG] GroupTaskTimer: Task ${taskId} auto-paused, immediately adding elapsed time ${elapsedTime} to total`)
+        // Immediately send a pause request to add the elapsed time to the total
+        fetch(`/api/group-tasks/${taskId}/timer`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'pause',
+            timeSpent: elapsedTime
+          }),
+        }).then(response => {
+          if (response.ok) {
+            console.log(`[DEBUG] GroupTaskTimer: Successfully added elapsed time ${elapsedTime} to task ${taskId} total`)
+            // Trigger refresh on other pages
+            window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          }
+        }).catch(error => {
+          console.error('Error adding elapsed time for auto-paused group task:', error)
+        })
+      }
+      
+      // Reset elapsedTime when status changes
       setElapsedTime(0)
-      // Clear timer from sessionStorage when not running
+      // Clear sessionStorage when not running
       sessionStorage.removeItem(`group-task-${taskId}-timer`)
     }
-  }, [status, taskId, isCurrentUserActive])
+  }, [status, taskId, isCurrentUserActive, elapsedTime])
 
   // Save timer state to session storage when component unmounts
   useEffect(() => {
@@ -136,8 +164,15 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
   }
 
   const handleAction = async (action: string) => {
+    if (isLoading) return // Prevent multiple clicks
+    
     try {
+      setIsLoading(true)
       const timeSpent = elapsedTime
+      
+      // For pause/complete actions, use current elapsed time (no need to check sessionStorage since auto-pause is handled immediately)
+      
+      console.log(`[DEBUG] GroupTaskTimer ${taskId} ${action}: elapsedTime=${elapsedTime}, timeSpent=${timeSpent}`)
       const response = await fetch(`/api/group-tasks/${taskId}/timer`, {
         method: 'POST',
         headers: {
@@ -153,8 +188,17 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
         const updatedTask = await response.json()
         onStatusChange(updatedTask.status)
         
-        // If starting a task, clear elapsed time since other tasks will be auto-paused
-        if (action === 'start') {
+        // Show success notification
+        if (action === 'complete') {
+          onNotification?.('Group task completed!', 'success')
+        } else if (action === 'start') {
+          onNotification?.('Group task timer started', 'info')
+        } else if (action === 'pause') {
+          onNotification?.('Group task timer paused', 'info')
+        }
+        
+        // Clear elapsed time when starting a new task or when manually pausing/completing
+        if (action === 'start' || action === 'pause' || action === 'complete') {
           setElapsedTime(0)
         }
         
@@ -164,9 +208,18 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
         }
         // Trigger event for ActiveTaskCard to refresh
         window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+      } else {
+        const errorData = await response.json()
+        if (errorData.error && errorData.error.includes('Only group members')) {
+          onNotification?.('Only group members can control this timer', 'error')
+        } else {
+          onNotification?.('Failed to update group task timer', 'error')
+        }
       }
     } catch (error) {
       console.error('Error updating group task timer:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -250,21 +303,23 @@ export default function GroupTaskTimer({ taskId, status, isActive, onStatusChang
         {buttonConfig.action && (!activeWorker || isCurrentUserActive) && (
           <button
             onClick={() => handleAction(buttonConfig.action!)}
-            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className}`}
+            disabled={isLoading}
+            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors w-full ${buttonConfig.className} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={status === 'IN_PROGRESS' ? { backgroundColor: '#b9a057', color: 'black' } : {}}
           >
             <buttonConfig.icon className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">{buttonConfig.label}</span>
+            <span className="hidden sm:inline">{isLoading ? 'Loading...' : buttonConfig.label}</span>
           </button>
         )}
 
         {status !== 'COMPLETED' && (!activeWorker || isCurrentUserActive) && (
           <button
             onClick={() => handleAction('complete')}
-            className="flex items-center justify-center gap-1 px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors w-full"
+            disabled={isLoading}
+            className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors w-full ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Complete</span>
+            <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Complete'}</span>
           </button>
         )}
 

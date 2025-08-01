@@ -46,6 +46,20 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Get open tasks (WAITING or IN_PROGRESS) - show all open tasks
+    const openTasks = await prisma.task.findMany({
+      where: {
+        assignedUserId: targetUserId,
+        status: {
+          in: ['WAITING', 'IN_PROGRESS']
+        }
+      },
+      include: {
+        assignedUser: true,
+        creator: true
+      }
+    })
+
     // Get completed group tasks
     const userGroups = await prisma.userGroup.findMany({
       where: { userId: targetUserId },
@@ -60,6 +74,24 @@ export async function GET(request: NextRequest) {
         updatedAt: {
           gte: startDate,
           lte: endDate
+        }
+      },
+      include: {
+        group: true,
+        timePerUser: {
+          include: {
+            user: true
+          }
+        }
+      }
+    })
+
+    // Get open group tasks (WAITING or IN_PROGRESS) - show all open group tasks
+    const openGroupTasks = await prisma.groupTask.findMany({
+      where: {
+        groupId: { in: groupIds },
+        status: {
+          in: ['WAITING', 'IN_PROGRESS']
         }
       },
       include: {
@@ -117,10 +149,18 @@ export async function GET(request: NextRequest) {
     
     const totalHours = (totalAdminTime + totalRegularTime + totalGroupTime) / 3600
 
+    // Calculate open tasks by type
+    const openAdminTasks = openTasks.filter((task: { type: string }) => task.type === 'ADMIN_TASK')
+    const openRegularTasks = openTasks.filter((task: { type: string }) => task.type === 'REGULAR_TASK')
+
     const analytics = {
       completedAdminTasks: adminTasks.length,
       completedRegularTasks: regularTasks.length,
       completedGroupTasks: completedGroupTasks.length,
+      openAdminTasks: openAdminTasks.length,
+      openRegularTasks: openRegularTasks.length,
+      openGroupTasks: openGroupTasks.length,
+      totalOpenTasks: openTasks.length + openGroupTasks.length,
       totalHours: Math.round(totalHours * 100) / 100,
       timePerTaskType: {
         admin: Math.round((totalAdminTime / 3600) * 100) / 100,
@@ -131,6 +171,11 @@ export async function GET(request: NextRequest) {
         admin: adminTasks.sort((a, b) => b.timeSum - a.timeSum),
         regular: regularTasks.sort((a, b) => b.timeSum - a.timeSum),
         group: completedGroupTasks.sort((a, b) => b.timeSum - a.timeSum)
+      },
+      openTasksByType: {
+        admin: openAdminTasks.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+        regular: openRegularTasks.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+        group: openGroupTasks.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       },
       userCreatedYear,
       availableYears

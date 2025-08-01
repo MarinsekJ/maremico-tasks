@@ -7,13 +7,15 @@ interface TaskTimerProps {
   taskId: string
   status: string
   timeSum: number
+  calculatedTimeSum?: number
   isActive: boolean
   onStatusChange: (status: string) => void
   assignedUserId?: string
   currentUserId?: string
+  onNotification?: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusChange, assignedUserId, currentUserId }: TaskTimerProps) {
+export default function TaskTimer({ taskId, status, timeSum, calculatedTimeSum, isActive, onStatusChange, assignedUserId, currentUserId, onNotification }: TaskTimerProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -44,7 +46,7 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
     }
   }, [isActive, status])
 
-  // Additional effect to handle auto-pause scenarios
+  // Additional effect to handle status changes (auto-pause and manual pause)
   useEffect(() => {
     // If status is not IN_PROGRESS, ensure timer is stopped
     if (status !== 'IN_PROGRESS') {
@@ -54,9 +56,35 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
+      
+      // If this was an auto-pause (status changed but we still have elapsed time), immediately add it to total time
+      if (elapsedTime > 0) {
+        console.log(`[DEBUG] TaskTimer: Task ${taskId} auto-paused, immediately adding elapsed time ${elapsedTime} to total`)
+        // Immediately send a pause request to add the elapsed time to the total
+        fetch(`/api/tasks/${taskId}/timer`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'pause',
+            timeSpent: elapsedTime
+          }),
+        }).then(response => {
+          if (response.ok) {
+            console.log(`[DEBUG] TaskTimer: Successfully added elapsed time ${elapsedTime} to task ${taskId} total`)
+            // Trigger refresh on other pages
+            window.dispatchEvent(new CustomEvent('taskStatusChanged'))
+          }
+        }).catch(error => {
+          console.error('Error adding elapsed time for auto-paused task:', error)
+        })
+      }
+      
+      // Reset elapsedTime when status changes
       setElapsedTime(0)
     }
-  }, [status, taskId])
+  }, [status, taskId, elapsedTime])
 
   // Save timer state to session storage when component unmounts
   useEffect(() => {
@@ -84,6 +112,10 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
   const handleAction = async (action: string) => {
     try {
       const timeSpent = elapsedTime
+      
+      // For pause/complete actions, use current elapsed time (no need to check sessionStorage since auto-pause is handled immediately)
+      
+      console.log(`[DEBUG] TaskTimer ${taskId} ${action}: elapsedTime=${elapsedTime}, timeSpent=${timeSpent}`)
       const response = await fetch(`/api/tasks/${taskId}/timer`, {
         method: 'POST',
         headers: {
@@ -99,8 +131,17 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
         const updatedTask = await response.json()
         onStatusChange(updatedTask.status)
         
-        // If starting a task, clear elapsed time since other tasks will be auto-paused
-        if (action === 'start') {
+        // Show success notification
+        if (action === 'complete') {
+          onNotification?.('Task completed!', 'success')
+        } else if (action === 'start') {
+          onNotification?.('Timer started', 'info')
+        } else if (action === 'pause') {
+          onNotification?.('Timer paused', 'info')
+        }
+        
+        // Clear elapsed time when starting a new task or when manually pausing/completing
+        if (action === 'start' || action === 'pause' || action === 'complete') {
           setElapsedTime(0)
         }
         
@@ -109,7 +150,9 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
       } else {
         const errorData = await response.json()
         if (errorData.error && errorData.error.includes('Only the assigned user')) {
-          alert('Only the assigned user can control the timer for this task')
+          onNotification?.('Only the assigned user can control the timer for this task', 'error')
+        } else {
+          onNotification?.('Failed to update task timer', 'error')
         }
       }
     } catch (error) {
@@ -169,7 +212,7 @@ export default function TaskTimer({ taskId, status, timeSum, isActive, onStatusC
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <Clock className="h-4 w-4" />
           <span className="hidden sm:inline">Total: </span>
-          <span>{formatTime(timeSum)}</span>
+          <span>{formatTime(calculatedTimeSum || timeSum)}</span>
         </div>
         {isActive && status === 'IN_PROGRESS' && (
           <div className="text-xs text-blue-600 font-medium mb-1">
